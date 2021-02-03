@@ -29,9 +29,5 @@ properties:
     alias: The Server Name
     required: false
     default: false
-advanced settings:
-  keepaliveTime: 1000
-  connectionTestQuery: SELECT 1
-  autoCommit: true
 excluded schemas:
   - SYS
