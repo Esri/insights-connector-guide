@@ -1,26 +1,32 @@
-id: esri.custom.mysql
-name: mysql connector
-driver: com.mysql.cj.jdbc.Driver
-url: jdbc:mysql://${server}:${port}/${database}
+id: esri.custom.DBName
+name: Database Name
+driver: com.myVendor.jdbc.Driver
+url: jdbc:myVendor://${server}:${port}/${databaseName}:user=${username};password=${password};
 properties:
   - name: server
     type: string
+    alias: Server Name
     required: true
   - name: port
     type: int
+    alias: Port Number
     required: false
     default: 1043
-  - name: database
+  - name: databaseName
     type: string
+    alias: Database Name
     required: true
   - name: username
     type: string
+    alias: User Name
     required: true
   - name: password
     type: string
+    alias: Password
     required: true
   - name: SSL
     type: boolean
+    alias: The Server Name
     required: false
     default: false
 advanced settings:
@@ -29,4 +35,3 @@ advanced settings:
   autoCommit: true
 excluded schemas:
   - SYS
-
