@@ -1,4 +1,4 @@
-id: esri.custom.DBName
+id: esri.DBName
 name: Database Name
 driver: com.myVendor.jdbc.Driver
 url: jdbc:myVendor://${server}:${port}/${databaseName}:user=${username};password=${password};
