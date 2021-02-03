@@ -1,0 +1,32 @@
+id: esri.custom.mysql
+name: mysql connector
+driver: com.mysql.cj.jdbc.Driver
+url: jdbc:mysql://${server}:${port}/${database}
+properties:
+  - name: server
+    type: string
+    required: true
+  - name: port
+    type: int
+    required: false
+    default: 1043
+  - name: database
+    type: string
+    required: true
+  - name: username
+    type: string
+    required: true
+  - name: password
+    type: string
+    required: true
+  - name: SSL
+    type: boolean
+    required: false
+    default: false
+advanced settings:
+  keepaliveTime: 1000
+  connectionTestQuery: SELECT 1
+  autoCommit: true
+excluded schemas:
+  - SYS
+
