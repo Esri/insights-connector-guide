@@ -1,0 +1,143 @@
+id: sample.mysql
+super class: esri.base
+identifier setting:
+  escape character: '\'
+  open enquote: '`'
+  close enquote: '`'
+  maximum identifier length: 64
+
+sql functions:
+  - name: mode
+    sql: # not supported
+
+  - name: median
+    sql: # not supported
+
+  - name: percentile
+    sql: # not supported
+
+  # aggregate functions
+  - name: stddev
+    sql: STDDEV_SAMP($0)
+
+  - name: variance
+    sql: VAR_SAMP($0)
+
+  # string functions
+  - name: string position
+    sql: LOCATE($0, $1, CASE WHEN $2=0 THEN 1 ELSE $2 END)
+
+  # Numeric functions
+  - name: round to
+    sql: ROUND($0, CAST($1 AS SIGNED))
+
+  - name: power
+    sql: POWER($0, CASE WHEN $0 < 0 AND CEIL(ABS(MOD($1, 1))) != 0 THEN NULL ELSE $1 END)
+
+  # date time functions
+  - name: extract year
+    sql: EXTRACT(YEAR FROM $0)
+
+  - name: extract quarter
+    sql: EXTRACT(QUARTER FROM $0)
+
+  - name: extract month
+    sql: EXTRACT(MONTH FROM $0)
+
+  - name: extract day of month
+    sql: EXTRACT(DAY FROM $0)
+
+  - name: extract day of week
+    sql: DAYOFWEEK(CAST($0 AS DATE))
+
+  - name: extract hour
+    sql: EXTRACT(HOUR FROM $0)
+
+  - name: extract minute
+    sql: EXTRACT(MINUTE FROM $0)
+
+  - name: extract second
+    sql: EXTRACT(SECOND FROM $0)
+
+  - name: datedif year
+    sql: TIMESTAMPDIFF(year, $0, $1)
+
+  - name: datedif month
+    sql: TIMESTAMPDIFF(month, $0, $1)
+
+  - name: datedif day
+    sql: TIMESTAMPDIFF(day, $0, $1)
+
+  - name: datedif hour
+    sql: TIMESTAMPDIFF(hour, $0, $1)
+
+  - name: datedif minute
+    sql: TIMESTAMPDIFF(minute, $0, $1)
+
+  - name: datedif second
+    sql: TIMESTAMPDIFF(second, $0, $1)
+
+  - name: create timestamp from milliseconds
+    sql: CONVERT_TZ(FROM_UNIXTIME($0/1000.0), @@session.time_zone, '+00:00')
+
+  - name: create timestamp from components
+    sql: >
+      CASE WHEN $1 > 12 OR $1 < 1 OR $2 > 31 OR $2 < 1 OR
+        $3 > 24 OR $3 < 1 OR $4 > 60 OR $4 < 0 OR $5 > 60 OR $5 < 0 THEN NULL ELSE
+        STR_TO_DATE(CONCAT($0,'-',$1,'-',$2,' ',$3,':',$4,':',$5),
+              CASE WHEN length($0) > 2 THEN '%Y-%m-%d %H:%i:%s' ELSE '%y-%m-%d %H:%i:%s' END)
+      END
+
+  - name: create timestamp from text
+    sql: STR_TO_DATE($0, '$1')
+
+  - name: create time from milliseconds
+    sql: Time(CONVERT_TZ(FROM_UNIXTIME($0/1000.0), @@session.time_zone, '+00:00'))
+
+  - name: create time from components
+    sql: >
+      CASE WHEN $0 > 24 OR $0 < 0 OR $1 > 60 OR $1 < 0 OR $2 > 60 OR $2 < 0 THEN NULL ELSE
+      Time(STR_TO_DATE( CONCAT($0,':',$1,':',$2), '%H:%i:%s'))END
+
+  - name: create date from milliseconds
+    sql: Date(FROM_UNIXTIME($0/1000))
+
+  - name: create date from components
+    sql: >
+      CASE WHEN $1 > 12 OR $1 < 1 OR $2 > 31 OR $2 < 1 THEN NULL ELSE
+      Date(STR_TO_DATE(CONCAT($0,'-',$1,'-',$2),
+              CASE WHEN length($0) > 2 THEN '%Y-%m-%d' ELSE '%y-%m-%d' END)) END
+
+  - name: current timestamp
+    sql:  CURRENT_TIMESTAMP
+
+  - name: current time
+    sql:  CURRENT_TIME
+
+  - name: current date
+    sql:  CURRENT_DATE
+
+  - name: now
+    sql: CONVERT_TZ(NOW(),@@session.time_zone, '+00:00')
+
+column types:
+  integer: SIGNED
+  float: DECIMAL(38,15)
+  string: CHAR(255)
+  date: DATE
+  timestamp: DATETIME
+  time: TIME
+
+date and time sql tokens:
+  YY: '%y'
+  YYYY: '%Y'
+  MM: '%m'
+  DD: '%d'
+  hh: '%h'
+  hh24: '%H'
+  mi: '%i'
+  ss: '%s'
+  ms: '%f'
+  mon: '%M'
+  ampm: '%p'
+

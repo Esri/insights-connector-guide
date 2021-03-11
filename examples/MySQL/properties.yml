@@ -1,0 +1,20 @@
+id: sample.mysql
+name: MYSQL
+driver: com.mysql.jdbc.Driver
+url: jdbc:mysql://${serverName}:${portNumber}/${databaseName}?user=${username}&password=${password}
+properties:
+  - name: serverName
+    type: string
+    required: true
+  - name: portNumber
+    type: int
+    required: true
+  - name: databaseName
+    type: string
+    required: true
+  - name: username
+    type: string
+    required: true
+  - name: password
+    type: string
+    required: true
