@@ -8,12 +8,10 @@ identifier setting:
   maximum identifier length: 64
 
 # mandatory configuration if super class is not defined
-sql top select: limit
-
-# mandatory configuration if super class is not defined
 sql clauses:
-  select constant: SELECT $0
-  offset: OFFSET $0 ROWS
+  select constant: SELECT ${columns}
+  limit: SELECT * FROM (${source}) t LIMIT ${limit}
+  pagination: SELECT * FROM (${source}) t ORDER BY ${orderby} LIMIT ${limit} OFFSET ${offset}
 
 # Default value for each capability is false
 sql capabilities:
@@ -62,20 +60,23 @@ sql functions:
   - name: max
     sql: MAX($0)
 
-  - name: median
-    sql: MEDIAN($0)
-
   - name: min
     sql: MIN($0)
-
-  - name: percentile
-    sql: PERCENTILE_CONT($0) WITHIN GROUP (ORDER BY $1)
 
   - name: stddev
     sql: STDDEV($0)
 
   - name: variance
     sql: VARIANCE($0)
+
+  - name: median
+    sql: MEDIAN($0)
+
+  - name: mode
+    sql: MODE($0)
+
+  - name: percentile
+    sql: PERCENTILE_CONT($0) WITHIN GROUP (ORDER BY $1)
 
   # string functions group
   - name: trim
@@ -172,7 +173,7 @@ sql functions:
       END
 
   - name: create timestamp from text
-    sql: TO_TIMESTAMP($0, $1)
+    sql: TO_TIMESTAMP($0, '$1')
 
   - name: create time from milliseconds
     sql: TO_TIME($0/1000.0)
@@ -289,7 +290,7 @@ sql functions:
     sql: $0 * $1
 
   - name: divide
-    sql: $0 / $1
+    sql: $0 / NULLIF($1,0)
 
   - name: power
     sql: POWER($0, $1)
@@ -313,7 +314,7 @@ sql functions:
     sql: SIGN($0)
 
   - name: truncate
-    sql: TRUNC($0, %1)
+    sql: TRUNC($0, $1)
 
   # conversion functions
   - name: cast
@@ -374,3 +375,5 @@ sql error states:
   invalid datetime format: 22007
   datetime overflow: 22008
   query cancelled: 57014
+  connection failed: 08001
+  cannot connect now: 57P03
