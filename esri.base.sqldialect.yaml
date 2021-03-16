@@ -77,6 +77,7 @@ sql functions:
 
   - name: percentile
     sql: PERCENTILE_CONT($0) WITHIN GROUP (ORDER BY $1)
+  # Description: Calculates a percentile based on a continuous distribution of the column value in SQL Server. The result is interpolated and might not be equal to any of the specific values in the column.
 
   # string functions group
   - name: trim
@@ -194,12 +195,15 @@ sql functions:
 
   - name: current timestamp
     sql: CURRENT_TIMESTAMP
+  # Description: returns the current timestamp.
 
   - name: current time
     sql: CURRENT_DATE
+  # Description: returns the current time.
 
   - name: current date
     sql: CURRENT_DATE
+  # Description: returns the current date.
 
   - name: now
     sql: NOW()
@@ -208,9 +212,11 @@ sql functions:
 
   - name: case when else
     sql: CASE WHEN $0 THEN $1 ELSE $2 END
+  # Description: The CASE statement goes through conditions and returns a value when the first condition is met. So, once a condition is true, it will stop reading and return the result. If no conditions are true, it returns the value in the ELSE clause.
 
   - name: case when
     sql: CASE WHEN $0 THEN $1 END
+  # Description: The CASE statement goes through conditions and returns a value when the first condition is met. So, once a condition is true, it will stop reading and return the result.
 
   - name: is null
     sql: $0 IS NULL
@@ -270,12 +276,15 @@ sql functions:
 
   - name: ln
     sql: LN(NULLIF(CASE WHEN $0 <= 0 THEN NULL ELSE $0 END ,0))
+  # Description: returns the natural logarithm of a number.
 
   - name: log
     sql: LOG(nullif(CASE WHEN $1 <= 0 THEN NULL ELSE $1 END, 0), CASE WHEN $0 <= 1 THEN NULL ELSE $0 END)
+  # Description: returns the natural logarithm of a specified number, or the logarithm of the number to the specified base
 
   - name: log10
     sql: LOG10(CASE WHEN $0 <= 0 THEN NULL ELSE $0 END)
+  # Description: returns the natural logarithm of a number to base-10.
 
   - name: negation
     sql: -($0)
@@ -294,35 +303,56 @@ sql functions:
 
   - name: power
     sql: POWER($0, $1)
+  # Description: Returns the value of a number raised to the power of another number.
 
   - name: mod
     sql: MOD($0, $1)
+  # Description:  returns the remainder of a number divided by another number.
+  # Syntax:
+  # $0 Column to be deivided
+  # $1 The divisor
 
   - name: round
     sql: ROUND($0)
+  # Description: Rounds a decimal to the closest integer.
 
   - name: round to
     sql: ROUND($0, CAST($1 AS INT))
-
+  # Description: Rounds a number to a specified number of decimal places.
+  # Syntax:
+  # $0 Column to be rounded
+  # $1 The number of decimal places to round number to. If omitted, it returns the integer
+  
   - name: ceiling
     sql: CEILING($0)
+  # Description: Returns the smallest integer value that is bigger than or equal to a number.
 
   - name: floor
     sql: FLOOR($0)
-
+  # Description: Returns the largest integer value that is smaller than or equal to a number.
+  
   - name: sign
     sql: SIGN($0)
+  # Description: The SIGN($0) function returns the sign of a number.
+  # This function will return one of the following:
+  #  If number > 0, it returns 1
+  #  If number = 0, it returns 0
+  #  If number < 0, it returns -1
 
   - name: truncate
     sql: TRUNC($0, $1)
+  # Description: The TRUNC(number, decimals) function truncates a number to the specified number of decimal places.  
+  # Syntax:  
+  # $0 - Column to be truncated
+  # $1 - number of decimal places to truncate to
 
   # conversion functions
   - name: cast
     sql: CAST($0 AS $1)
-  # Descriton: The CAST() function converts a value (of any type) into a specified datatype. The supported datatype are shown below in "column types" section
-  # Syntax: CAST($0 AS $1) 
+  # Descriton: The CAST() function converts a value (of any type) into a specified data type. The supported data type are shown below in "column types" section
+  # Syntax: 
   # $0 - Column to be converted
-  # $1 - data type to convert colum to {see "colunm types"}
+  # $1 - data type to convert column to {see "column types"}
 
 # mandatory configuration if super class is not defined
 column types:
