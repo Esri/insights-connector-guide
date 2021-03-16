@@ -319,6 +319,10 @@ sql functions:
   # conversion functions
   - name: cast
     sql: CAST($0 AS $1)
+  # Descriton: The CAST() function converts a value (of any type) into a specified datatype. The supported datatype are shown below in "column types" section
+  # Syntax: CAST($0 AS $1) 
+  # $0 - Column to be converted
+  # $1 - data type to convert colum to {see "colunm types"}
 
 # mandatory configuration if super class is not defined
 column types:
