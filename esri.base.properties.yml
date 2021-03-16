@@ -1,7 +1,24 @@
+# id of the connector type (mandatory)
 id: esri.DBName
+
+# name of the connector type (mandatory). It is the value displayed in the relational datastore types administration page
 name: Database Name
+
+# The main class of the JDBC driver (mandatory)
 driver: com.myVendor.jdbc.Driver
+
+# Connection URL template for the connector type (mandatory). 
+# Placeholders must be in the format ${name}, and every placeholder must be specified in the properties section below.
 url: jdbc:myVendor://${server}:${port}/${databaseName}:user=${username};password=${password};
+
+# A list of required by JDBC driver to establish connection (mandatory). 
+# All the placeholders in the "url" property must be specified here, and it also allows extra properties that are not included in the "url".
+# Each property can include the following attribute:
+#     1. name  - property name (mandatory). If the property references a placeholder in the "url", its name must be identical to the placeholder
+#     2. alias - property alias (mandatory). It is the displayed name in the Insights app
+#     3. type  - property type (mandatory). It can be either of string, int or boolean
+#     4. required - is the property required (mandatory). If true, user must enter a value when creating new connections for this type
+#     5. default - default value (optional). Default value will be used in creating new connections if a value is configured here
 properties:
   - name: server
     type: string
@@ -26,8 +43,15 @@ properties:
     required: true
   - name: SSL
     type: boolean
-    alias: The Server Name
+    alias: is SSL?
     required: false
     default: false
+
+# list of schemas to be excluded from displaying in Insights (Optional)
 excluded schemas:
   - SYS
+
+# A SQL query used to validate if database connection is valid (Optional)
+# The query should not return an empty resultset if connection is valid, and if you want to reference a property defined in the "properties" section,
+# you need to use it in a placeholder format, i.e ${property_name}
+validation query: SELECT 1 WHERE CURRENT_DATABASE() = '${databaseName}'
