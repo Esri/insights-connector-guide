@@ -1,6 +1,9 @@
 # id of the connector type (mandatory)
 id: esri.base
 
+super class: # allows your dialect to inherit all unconfigured properties from a parent class. The only available value now is "esri.base" for the base dialect
+             # Insights provides
+             
 # configures how SQL identifiers will be generated, mandatory if super class is not defined.
 # ----- description of each setting ------------ (TODO: decide the location: all in the header or at each setting)
 # escape character: used to escape special characters. Some common escape characters include \ ' "
