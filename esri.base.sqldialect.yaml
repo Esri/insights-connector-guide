@@ -1,49 +1,91 @@
+# id of the connector type (mandatory)
 id: esri.base
 
-# mandatory configuration if super class is not defined
+# configures how SQL identifiers will be generated, mandatory if super class is not defined.
+# ----- description of each setting ------------ (TODO: decide the location: all in the header or at each setting)
+# escape character: used to escape special characters. Some common escape characters include \ ' "
+# open and close enquotes: used to quote identifiers, such as names for tables/columns/keys/index
+# maximum identifier length: maximum number of characters allowed for column and table names
 identifier setting:
   escape character: '"'
   open enquote: '"'
   close enquote: '"'
   maximum identifier length: 64
 
-# mandatory configuration if super class is not defined
-sql top select: limit
-
-# mandatory configuration if super class is not defined
+# configures some important SQL clauses used in Insights, mandatory if super class is not defined
+# Each clause consists of your SQL keyword and placeholders. Insights will replace the placeholders with corresponding contents,
+# so make sure the placeholder names are identical to the ones in each clause below.
+# ----- description of each clause ------------
+# select constant: select from a dummy or dual table. Available placeholders: ${columns} (comma separated column names)
+# limit: select top N rows without order. Available placeholders: ${source} (inner query), ${limit} (an integer)
+# pagination: pagination select with order. Available placeholders: $columns}, ${source}, ${limit}, ${offset} (an integer), ${order by} (comma separated column names)
 sql clauses:
-  select constant: SELECT $0
-  offset: OFFSET $0 ROWS
+  select constant: SELECT ${columns}  
+  # (TODO: give other examples? looks messy) some other common sqls: SELECT ${columns} FROM DUMMY, SELECT ${columns} FROM DUAL
+  # (TODO: explain what each placeholder represents?)
 
-# Default value for each capability is false
+  limit: SELECT * FROM (${source}) t LIMIT ${limit} 
+  # SQLServer style limit: SELECT TOP ${limit} * FROM (${source})
+  # Oracle style limit: SELECT * FROM (${source}) WHERE ROWNUM <= ${limit}
+
+  pagination: SELECT * FROM (${source}) t ORDER BY ${orderby} LIMIT ${limit} OFFSET ${offset}
+  # FETCH style pagination: SELECT * FROM (${source}) t ORDER BY ${orderby} OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY
+  # ROWNUM style: SELECT * FROM (
+  #                  SELECT ${columns}, ROWNUM as RNR
+  #                  FROM (SELECT * FROM (${source}) t ORDER BY ${orderby}) t
+  #               ) t
+  #               WHERE RNR > ${offset} AND RNR <= ${limit} + ${offset}
+
+# Configures the capabilities of the database. Default value is false.
+# "Window functions" will affect what analysis is supported in Insights, while the others help decide how Insights create SQL queries.
+# ---------- Description of each capability -------------
+# window functions: true if the database supports window functions. If false, many functionalities (TODO: list them?) will not be supported in Insights. 
+# window function in where clause:
+#       true if your database supports syntax like: SELECT 1 WHERE id < AVG(num + id)
+# named parameters in common table expression:
+#       true if your database supports syntax like: WITH some_cte (col1, col2) AS ...
+#       false if your datdabase only supports: WITH some_cte AS ...
 sql capabilities:
   window functions: true
   window function in where clause: false
-  pagination without order by: true
   common table expression: true
   named parameters in common table expression: true
 
+# configures the sql syntax for window functions used in Insights, mandatory if super class is not defined
+# SQL consists of keywords and one or more numbered placeholders
 window functions:
+  # row number without partition
+  # $0: comma separated order by names
+  # (TODO: Give test queries? long sql, doc won't look pretty)
   - name: row number
     sql: ROW_NUMBER() OVER(ORDER BY $0)
 
+  # row number with partition
+  # $0: comman separated names, $1: comma separated names
   - name: partitioned row number
     sql: ROW_NUMBER() OVER(PARTITION BY $0 ORDER BY $1)
 
+  # average with partition
+  # $0: the column name AVG is being calculated on, $1: comma separated column names
   - name: average over
     sql: AVG($0) OVER(PARTITION BY $1)
 
+  # sum with partition
+  - name: sum over
+    sql: SUM($0) OVER(PARTITION BY $1)
+   
+  # lag functon with offset 1
+  - name: lag over
+    sql: LAG($0) OVER(ORDER BY $1)
+
+  # sliding average, or moving average without partition
+  # $0 and $1: comma separate names, $2 and $3: number that define the width of windows
   - name: sliding average
     sql: AVG($0) OVER(ORDER BY $1 ROWS BETWEEN $2 PRECEDING AND $3 following)
 
+  # sliding average with partition
   - name: partitioned sliding average
     sql: AVG($0) OVER(PARTITION BY $1 ORDER BY $2 ROWS BETWEEN $3 PRECEDING AND $4 following)
-
-  - name: sum over
-    sql: SUM($0) OVER(PARTITION BY $1)
-
-  - name: lag over
-    sql: LAG($0) OVER(ORDER BY $1)
 
 sql functions:
   # aggregate functions group
@@ -319,7 +361,10 @@ sql functions:
   - name: cast
     sql: CAST($0 AS $1)
 
-# mandatory configuration if super class is not defined
+# Configures the types used for casting, mandatory if super class is not defined
+# for example if the string type is configured as `VARCHAR(255)`, then when Insights needs to cast strings,
+# our SQL will look like `CAST($0 AS VARCHAR(255))`.
+# Make sure the string type has enough length, and the float type has enough precision for your data
 column types:
   integer: integer
   float: decimal(38,15)
@@ -328,7 +373,24 @@ column types:
   timestamp: timestamp
   time: time
 
-# If section "date format codes" is not defined, then this section must exist
+# Configures the sql syntax for date and time formats, mandatory if section "date format codes" is not defined
+# Left side is the format you will use in DATEVALUE function, and right side is the format SQL you tell us to use in SQL queries.
+# (TODO: ? users have to use tokens on the left in the DATEVALUE function)
+# YY: two digit year
+# YYYY: four digit year
+# MM: month (1-12)
+# DD: day of month (1-31)
+# hh: hour (0-12)
+# hh24: hour (0-24)
+# mi: minute
+# ss: second 
+# ms: millisecond
+# mon: month name (January, February etc.)
+# ampm: am or pm
+# Usage: In DATEVALUE calculations, for example DATEVALUE('1999-01-01 10:20:30 am', ${format}), you need to provide Insights
+# with a format that corresponds to your date string, so for the above example, the format should be 'YYYY-MM-DD hh:mi:ss ampm'.
+# Insights will map the format string to the tokens you configured and use it in SQL query, so the above format will be translated to
+# 'yyyy-MM-dd hh:mi:ss am'
 date and time sql tokens:
   YY: yy
   YYYY: yyyy
@@ -342,6 +404,13 @@ date and time sql tokens:
   mon: mon
   ampm: am
 
+# Configures some shortcut for date and time format mapping (Optional)
+# Left side is the format you will use in DATEVALUE function, and right side is the format SQL you tell us to use in SQL queries.
+# You may configure this section if you have a set of most frequently used formats. If this section exists, Insights will always try to 
+# find an exact match from the list here before trying to assemble one using the `date and time sql tokens` above.
+# You have to configure this section if your database does not use specific tokens for date and time formats, like SQL Server.
+# Usage: If the format code for 'mm/dd/yyyy' for your database is 101, then you should put "mm/dd/yyyy":101 in this seciton.
+#        When you calculate DATEVALUE(date, 'mm/dd/yyyy') in Insights, we will be able to use the 101 code directly.
 date format codes:
   # US
   "mm/dd/yy": mm/dd/yy
@@ -370,6 +439,9 @@ date format codes:
   "Mon dd, yy": mon dd, yy
   "Mon dd, yyyy": mon dd, yyyy
 
+# Configures the state code for different types of sql exceptions. This section is optional, but it helps Insights displays correct error message.
+# Some databases publish their error codes, for example 
+#   Postgres: https://www.postgresql.org/docs/10/errcodes-appendix.html
 sql error states:
   invalid datetime format: 22007
   datetime overflow: 22008
