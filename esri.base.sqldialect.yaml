@@ -122,45 +122,58 @@ sql functions:
   # date time functions group
   - name: extract year
     sql: DATEPART(year, $0)
-
+# Description:  returns a year part of a date
   - name: extract quarter
     sql: DATEPART(quarter, $0)
+# Description:  returns a quarter part of a date
 
   - name: extract month
     sql: DATEPART(month, $0)
+# Description:  returns a month part of a date
 
   - name: extract day of month
     sql: DATEPART(day, $0)
+# Description:  returns day of the month part of a date
 
   - name: extract day of week
     sql: DATEPART(weekday, $0)
+# Description:  returns day of the week part of a date
 
   - name: extract hour
     sql: DATEPART(hour, $0)
+# Description:  returns the hour of the month part of a date time field
 
   - name: extract minute
     sql: DATEPART(minute, $0)
+# Description:  returns the hour of the month part of a date time field
 
   - name: extract second
     sql: DATEPART(second, $0)
+# Description:  returns the hour of the month part of a date time field
 
   - name: datedif year
     sql: DATEDIFF(year, $0, $1)
+# Description: DATEDIFF() function returns the difference between two date time fields in years.
 
   - name: datedif month
     sql: DATEDIFF(month, $0, $1)
+# Description: DATEDIFF() function returns the difference between two date time fields in months.
 
   - name: datedif day
     sql: DATEDIFF(day, $0, $1)
+# Description: DATEDIFF() function returns the difference between two date time fields in days.
 
   - name: datedif hour
     sql: DATEDIFF(hour, $0, $1)
+# Description: DATEDIFF() function returns the difference between two date time fields in hours.
 
   - name: datedif minute
     sql: DATEDIFF(minute, $0, $1)
+# Description: DATEDIFF() function returns the difference between two date time fields in minutes.
 
   - name: datedif second
     sql: DATEDIFF(second, $0, $1)
+# Description: DATEDIFF() function returns the difference between two date time fields in seconds.
 
   - name: create timestamp from milliseconds
     sql: to_timestamp($0/1000.0)
@@ -172,17 +185,37 @@ sql functions:
         TO_TIMESTAMP($0 || '-' || $1 || '-' || $2 || ' ' || $3 || ':' || $4 || ':' || $5,
               CASE WHEN length($0) > 2 THEN 'YYYY-MM-DD hh24:mi:ss' ELSE 'YY-MM-DD hh24:mi:ss' END)
       END
+# Description: Creates a timestamp from string 2 possible string timestamp format masks 'YYYY-MM-DD hh24:mi:ss' and 'YY-MM-DD hh24:mi:ss'  
+# Syntax
+# $0 Year part of the date component
+# $1 Month part of the date component
+# $2 Day part of the date component
+# $3 Hour part of the time component
+# $4 Minutes part of the time component
+# $5 Seconds part of the time component
 
   - name: create timestamp from text
     sql: TO_TIMESTAMP($0, '$1')
+# Description: Creates a time from string field using a specified fromat mask
+# Syntax:
+# $0 string to convert to time
+# $1 format string
 
   - name: create time from milliseconds
     sql: TO_TIME($0/1000.0)
+# Description: Creates a time value from the number of milliseconds
+# Syntax:
+# $0 Milliseconds to convert to time
 
   - name: create time from components
     sql: >
       CASE WHEN $0 > 24 OR $0 < 0 OR $1 > 60 OR $1 < 0 OR $2 > 60 OR $2 < 0 THEN NULL ELSE
       TO_TIME( $0 || ':' || $1 || ':' || $2, 'hh24:mi:ss') END
+# Description: Creates a time value from a string time format masks  'hh24:mi:ss'   
+# Syntax
+# $0 Hour part of the time component
+# $1 Minutes part of the time component
+# $2 Seconds part of the time component
 
   - name: create date from milliseconds
     sql: TO_DATE($0/1000.0)
@@ -192,6 +225,11 @@ sql functions:
       CASE WHEN $1 > 12 OR $1 < 1 OR $2 > 31 OR $2 < 1 THEN NULL ELSE
       TO_DATE($0 || '-' || $1 || '-' ||$2,
               CASE WHEN length($0) > 2 THEN 'YYYY-MM-DD' ELSE 'YY-MM-DD' END) END
+# Description: Creates a date from string 2 possible string date format masks  'YYYY-MM-DD' and 'YY-MM-DD'   
+# Syntax
+# $0 Year part of the date component
+# $1 Month part of the date component
+# $2 Day part of the date component
 
   - name: current timestamp
     sql: CURRENT_TIMESTAMP
@@ -239,6 +277,11 @@ sql functions:
 
   - name: between
     sql: $0 BETWEEN $1 AND $2
+  # Description: Operator selects values within a given range. The values can be numbers, text, or dates.
+  # Syntax:
+  # $0 column being filtered
+  # $1 lower value of the range 
+  # $2 Upper value of the range
 
   - name: not
     sql: NOT($0)
@@ -276,15 +319,15 @@ sql functions:
 
   - name: ln
     sql: LN(NULLIF(CASE WHEN $0 <= 0 THEN NULL ELSE $0 END ,0))
-  # Description: returns the natural logarithm of a number.
+  # Description: Returns the natural logarithm of a number.
 
   - name: log
     sql: LOG(nullif(CASE WHEN $1 <= 0 THEN NULL ELSE $1 END, 0), CASE WHEN $0 <= 1 THEN NULL ELSE $0 END)
-  # Description: returns the natural logarithm of a specified number, or the logarithm of the number to the specified base
+  # Description: Returns the natural logarithm of a specified number, or the logarithm of the number to the specified base
 
   - name: log10
     sql: LOG10(CASE WHEN $0 <= 0 THEN NULL ELSE $0 END)
-  # Description: returns the natural logarithm of a number to base-10.
+  # Description: Returns the natural logarithm of a number to base-10.
 
   - name: negation
     sql: -($0)
@@ -307,7 +350,7 @@ sql functions:
 
   - name: mod
     sql: MOD($0, $1)
-  # Description:  returns the remainder of a number divided by another number.
+  # Description:  Returns the remainder of a number divided by another number.
   # Syntax:
   # $0 Column to be deivided
   # $1 The divisor
@@ -321,7 +364,7 @@ sql functions:
   # Description: Rounds a number to a specified number of decimal places.
   # Syntax:
   # $0 Column to be rounded
-  # $1 The number of decimal places to round number to. If omitted, it returns the integer
+  # $1 The number of decimal places to round number to. 
   
   - name: ceiling
     sql: CEILING($0)
@@ -333,17 +376,17 @@ sql functions:
   
   - name: sign
     sql: SIGN($0)
-  # Description: The SIGN($0) function returns the sign of a number.
+  # Description: Returns the sign of a number.
   # This function will return one of the following:
-  #  If number > 0, it returns 1
-  #  If number = 0, it returns 0
-  #  If number < 0, it returns -1
+  #  If $0 > 0, it returns 1
+  #  If $0 = 0, it returns 0
+  #  If $0 < 0, it returns -1
 
   - name: truncate
     sql: TRUNC($0, $1)
-  # Description: The TRUNC(number, decimals) function truncates a number to the specified number of decimal places.  
+  # Description: This function truncates a number to the specified number of decimal places.  
   # Syntax:  
-  # $0 - Column to be truncated
+  # $0 - Column to be truncated (number)
   # $1 - number of decimal places to truncate to
 
   # conversion functions
