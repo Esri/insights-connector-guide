@@ -1,0 +1,79 @@
+id: sample.redshift
+super class: esri.base
+identifier setting:
+  escape character: '\'
+  open enquote: '"'
+  close enquote: '"'
+  maximum identifier length: 127
+
+sql functions:   
+  - name: extract year
+    sql: EXTRACT(year FROM $0) 
+  - name: extract quarter
+    sql: EXTRACT(quarter FROM $0)
+  - name: extract month
+    sql: EXTRACT(month FROM $0)
+  - name: extract day of month
+    sql: EXTRACT(day FROM $0)
+  - name: extract day of week
+    sql: EXTRACT(dayofweek FROM $0)
+  - name: extract hour
+    sql: EXTRACT(hour FROM $0)
+  - name: extract minute
+    sql: EXTRACT(minute FROM $0)
+  - name: extract second
+    sql: EXTRACT(second FROM $0)
+
+  - name: string position
+    sql: POSITION($0 IN $1)
+
+  - name: create timestamp from milliseconds
+    sql: TIMESTAMP 'epoch' + $0/1000 * INTERVAL '1 Second '
+
+
+  - name: create time from milliseconds
+    sql: CAST ((timestamp 'epoch' + $0/1000 * interval '1 second') AS TIME)
+
+  - name: create time from components
+    sql: >
+      CASE WHEN $0 > 24 OR $0 < 0 OR $1 > 60 OR $1 < 0 OR $2 > 60 OR $2 < 0 THEN NULL ELSE
+      TO_TIMESTAMP( $0 || ':' || $1 || ':' || $2, 'hh24:mi:ss')::TIME END
+      
+  - name: create date from milliseconds
+    sql: CAST ((timestamp 'epoch' + $0/1000 * interval '1 second') AS DATE)
+
+
+  - name: current time
+    sql:  CURRENT_Time
+
+
+column types:
+  integer: int
+  timestamp: datetime
+
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        

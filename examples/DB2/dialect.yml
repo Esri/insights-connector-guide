@@ -1,0 +1,130 @@
+id: sample.db2
+super class: esri.base
+# mandatory configuration if super class is not defined
+identifier setting:
+  escape character: '\'
+  open enquote: '"'
+  close enquote: '"'
+  maximum identifier length: 18
+
+# mandatory configuration if super class is not defined
+sql clauses:
+  select constant: SELECT ${columns} FROM SYSIBM.SYSDUMMY1
+
+
+
+window functions:
+
+sql functions:
+
+  - name: string position
+    sql: INSTR($1, $0, CASE WHEN $2=0 THEN 1 ELSE $2 END)
+
+
+  # date time functions group
+  - name: extract year
+    sql: YEAR($0)
+
+  - name: extract quarter
+    sql: QUARTER($0)
+
+  - name: extract month
+    sql: MONTH($0)
+
+  - name: extract day of month
+    sql: DAYOFMONTH($0)
+
+  - name: extract day of week
+    sql: DAYOFWEEK($0)
+
+  - name: extract hour
+    sql: HOUR($0)
+
+  - name: extract minute
+    sql: MINUTE($0)
+
+  - name: extract second
+    sql: SECOND( $0)
+
+  - name: datedif year
+    sql: YEARS_BETWEEN($0, $1)
+
+  - name: datedif month
+    sql: MONTHS_BETWEEN ($0, $1)
+
+  - name: datedif day
+    sql: DAYS_BETWEEN($0, $1)
+
+  - name: datedif hour
+    sql: HOURS_BETWEEN($0, $1)
+
+  - name: datedif minute
+    sql: MINUTES_BETWEEN($0, $1)
+
+  - name: datedif second
+    sql: SECONDS_BETWEEN($0, $1)
+
+  - name: create timestamp from milliseconds
+    sql: TIMESTAMP ('1970-01-01-00.00.00.00000') + ($0/1000) SECOND
+
+  - name: create timestamp from components
+    sql: >
+      CASE WHEN $1 > 12 OR $1 < 1 OR $2 > 31 OR $2 < 1 OR
+        $3 > 24 OR $3 < 1 OR $4 > 60 OR $4 < 0 OR $5 > 60 OR $5 < 0 THEN NULL ELSE
+        TIMESTAMP_FORMAT($0 || '-' || $1 || '-' || $2 || ' ' || $3 || ':' || $4 || ':' || $5,
+              CASE WHEN length($0) > 2 THEN 'YYYY-MM-DD HH24:MI:SS' ELSE 'YY-MM-DD HH24:MI:SS' END)
+      END
+
+  - name: create timestamp from text
+    sql: TIMESTAMP_FORMAT($0, '$1')
+
+  - name: create time from milliseconds
+    sql: (TIMESTAMP ('1970-01-01-00.00.00.00000') + ($/1000) SECOND)
+    
+  - name: create time from components
+    sql: >
+      CASE WHEN $0 > 24 OR $0 < 0 OR $1 > 60 OR $1 < 0 OR $2 > 60 OR $2 < 0 THEN NULL ELSE
+      TIME(TIMESTAMP_FORMAT( $0 || ':' || $1 || ':' || $2, 'hh24:mi:ss')) END
+
+  - name: create date from milliseconds
+    sql: ( date('1970-01-01')  + ($0 / 86400000) days   )
+
+  - name: create date from components
+    sql: >
+      CASE WHEN $1 > 12 OR $1 < 1 OR $2 > 31 OR $2 < 1 THEN NULL ELSE
+      TO_DATE($0 || '-' || $1 || '-' ||$2,
+              CASE WHEN length($0) > 2 THEN 'YYYY-MM-DD' ELSE 'YY-MM-DD' END) END
+
+  - name: current timestamp
+    sql:  CURRENT_TIMESTAMP
+
+  - name: current time
+    sql:  CURRENT_DATE
+
+  - name: current date
+    sql:  CURRENT_DATE
+
+
+
+# mandatory configuration if super class is not defined
+column types:
+  integer: int
+  float: float
+  string: varchar(255)
+  date: date
+  timestamp: timestamp
+  time: time
+
+# If section "date format codes" is not defined, then this section must exist
+date and time sql tokens:
+  YY: yy
+  YYYY: yyyy
+  MM: MM
+  DD: DD
+  hh: HH
+  hh24: HH24
+  mi: MI
+  ss: SS
+  ms: ms
+  mon: MON
+  ampm: .a.m.

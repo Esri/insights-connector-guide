@@ -1,0 +1,32 @@
+id: sample.db2
+name: DB2
+driver: com.ibm.db2.jcc.DB2Driver
+url: jdbc:db2://${serverName}:${portNumber}/${databaseName}:user=${username};password=${password};
+properties:
+  - name: serverName
+    type: string
+    required: true
+    alias: Server Name
+  - name: portNumber
+    type: int
+    default: 50000                      
+    required: true
+    alias: Port Number
+  - name: databaseName
+    type: string
+    alias: Database Name
+    required: true
+  - name: username
+    type: string
+    alias: User Name
+    required: true
+  - name: password
+    type: string
+    alias: Password
+    required: true
+excluded schemas:
+  - SYSIBMADM
+  - SYSCAT
+  - SYSIBM
+  - SYSTOOLS 
+  - SYSSTAT  

@@ -1,0 +1,20 @@
+id: sample.redshift
+name: RedShift
+driver: com.amazon.redshift.jdbc42.Driver
+url: jdbc:redshift://${serverName}:${portNumber}/${databaseName}?ssl=true&UID=${username}&PWD=${password} 
+properties:
+  - name: serverName
+    type: string
+    required: true
+  - name: portNumber
+    type: int
+    required: true
+  - name: databaseName
+    type: string
+    required: true
+  - name: username
+    type: string
+    required: true
+  - name: password
+    type: string
+    required: true
