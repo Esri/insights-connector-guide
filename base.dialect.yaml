@@ -3,9 +3,10 @@ id: esri.base
 
 super class: # allows your dialect to inherit all unconfigured properties from a parent class. The only available value now is "esri.base" for the base dialect
              # Insights provides
-             
+
 # configures how SQL identifiers will be generated, mandatory if super class is not defined.
-# ----- description of each setting ------------ (TODO: decide the location: all in the header or at each setting)
+# -----------------
+# Descriptions:
 # escape character: used to escape special characters. Some common escape characters include \ ' "
 # open and close enquotes: used to quote identifiers, such as names for tables/columns/keys/index
 # maximum identifier length: maximum number of characters allowed for column and table names
@@ -18,31 +19,17 @@ identifier setting:
 # configures some important SQL clauses used in Insights, mandatory if super class is not defined
 # Each clause consists of your SQL keyword and placeholders. Insights will replace the placeholders with corresponding contents,
 # so make sure the placeholder names are identical to the ones in each clause below.
-# ----- description of each clause ------------
-# select constant: select from a dummy or dual table. Available placeholders: ${columns} (comma separated column names)
-# limit: select top N rows without order. Available placeholders: ${source} (inner query), ${limit} (an integer)
-# pagination: pagination select with order. Available placeholders: $columns}, ${source}, ${limit}, ${offset} (an integer), ${order by} (comma separated column names)
+# Consult WIKI page https://github.com/ArcGIS/insights-connector-guide/wiki/Configure-SQL-Clauses for more details on how to configure this section
 sql clauses:
   select constant: SELECT ${columns}  
-  # (TODO: give other examples? looks messy) some other common sqls: SELECT ${columns} FROM DUMMY, SELECT ${columns} FROM DUAL
-  # (TODO: explain what each placeholder represents?)
-
   limit: SELECT * FROM (${source}) t LIMIT ${limit} 
-  # SQLServer style limit: SELECT TOP ${limit} * FROM (${source})
-  # Oracle style limit: SELECT * FROM (${source}) WHERE ROWNUM <= ${limit}
-
   pagination: SELECT * FROM (${source}) t ORDER BY ${orderby} LIMIT ${limit} OFFSET ${offset}
-  # FETCH style pagination: SELECT * FROM (${source}) t ORDER BY ${orderby} OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY
-  # ROWNUM style: SELECT * FROM (
-  #                  SELECT ${columns}, ROWNUM as RNR
-  #                  FROM (SELECT * FROM (${source}) t ORDER BY ${orderby}) t
-  #               ) t
-  #               WHERE RNR > ${offset} AND RNR <= ${limit} + ${offset}
 
 # Configures the capabilities of the database. Default value is false.
-# "Window functions" will affect what analysis is supported in Insights, while the others help decide how Insights create SQL queries.
-# ---------- Description of each capability -------------
-# window functions: true if the database supports window functions. If false, many functionalities (TODO: list them?) will not be supported in Insights. 
+# "Window functions" will affect what analysis is supported in Insights, while the others decide how Insights create SQL queries.
+# -----------------------
+# Descriptions:
+# window functions: If false, functionalities including but not limited to bar chart, OLS, trendldine will not be supported in Insights. 
 # window function in where clause:
 #       true if your database supports syntax like: SELECT 1 WHERE id < AVG(num + id)
 # named parameters in common table expression:
@@ -60,7 +47,6 @@ sql capabilities:
 window functions:
   # row number without partition
   # $0: comma separated order by names
-  # (TODO: Give test queries? long sql, doc won't look pretty)
   - name: row number
     sql: ROW_NUMBER() OVER(ORDER BY $0)
 
@@ -70,7 +56,7 @@ window functions:
     sql: ROW_NUMBER() OVER(PARTITION BY $0 ORDER BY $1)
 
   # average with partition
-  # $0: the column name AVG is being calculated on, $1: comma separated column names
+  # $0: name of the column to be averaged, $1: comma separated column names
   - name: average over
     sql: AVG($0) OVER(PARTITION BY $1)
 
@@ -83,11 +69,12 @@ window functions:
     sql: LAG($0) OVER(ORDER BY $1)
 
   # sliding average, or moving average without partition
-  # $0 and $1: comma separate names, $2 and $3: number that define the width of windows
+  # $0: name of the column to be averaged, $1: comma separate names, $2 and $3: number that define the width of windows
   - name: sliding average
     sql: AVG($0) OVER(ORDER BY $1 ROWS BETWEEN $2 PRECEDING AND $3 following)
 
   # sliding average with partition
+  # $0: name of the column to be averaged, $1 and $2: comma separate names, $3 and $4: number that define the width of windows
   - name: partitioned sliding average
     sql: AVG($0) OVER(PARTITION BY $1 ORDER BY $2 ROWS BETWEEN $3 PRECEDING AND $4 following)
 
@@ -459,7 +446,6 @@ column types:
 
 # Configures the sql syntax for date and time formats, mandatory if section "date format codes" is not defined
 # Left side is the format you will use in DATEVALUE function, and right side is the format SQL you tell us to use in SQL queries.
-# (TODO: ? users have to use tokens on the left in the DATEVALUE function)
 # YY: two digit year
 # YYYY: four digit year
 # MM: month (1-12)
@@ -471,10 +457,11 @@ column types:
 # ms: millisecond
 # mon: month name (January, February etc.)
 # ampm: am or pm
-# Usage: In DATEVALUE calculations, for example DATEVALUE('1999-01-01 10:20:30 am', ${format}), you need to provide Insights
-# with a format that corresponds to your date string, so for the above example, the format should be 'YYYY-MM-DD hh:mi:ss ampm'.
-# Insights will map the format string to the tokens you configured and use it in SQL query, so the above format will be translated to
-# 'yyyy-MM-dd hh:mi:ss am'
+# --------------------- 
+# Example: Based on the below configuration, for a date string '1999-01-01 10:20:30 am', you must provide us the following format in  
+# DATE VALUE calculation: DATEVALUE('1999-01-01 10:20:30 am', 'YYYY-MM-DD hh:mi:ss ampm'). The letter cases must be the same.
+# Insights will map the format to your configuration on the right, so the above format will be translated to
+# 'yyyy-MM-dd hh:mi:ss am' and used in SQL queries.
 date and time sql tokens:
   YY: yy
   YYYY: yyyy
@@ -493,6 +480,7 @@ date and time sql tokens:
 # You may configure this section if you have a set of most frequently used formats. If this section exists, Insights will always try to 
 # find an exact match from the list here before trying to assemble one using the `date and time sql tokens` above.
 # You have to configure this section if your database does not use specific tokens for date and time formats, like SQL Server.
+# --------------------
 # Usage: If the format code for 'mm/dd/yyyy' for your database is 101, then you should put "mm/dd/yyyy":101 in this seciton.
 #        When you calculate DATEVALUE(date, 'mm/dd/yyyy') in Insights, we will be able to use the 101 code directly.
 date format codes:
