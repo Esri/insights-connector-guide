@@ -2,6 +2,8 @@
 
 Connectors are used to access data from databases directly in Insights. This guide provides resources to help you add connectors to use in your organization. You can download the sample files, read help documentation on the Wiki, or create an issue to ask a question.
 
+> Note: Adding connections to relational databases that are not on the list of [supported databases](https://doc.arcgis.com/en/insights/latest/administer/supported-databases.htm) is currently in preview.
+
 ## Instructions
 
 Complete the following steps to add a connector to your organization:
