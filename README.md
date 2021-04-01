@@ -1,8 +1,10 @@
 # insights-connector-guide
 
-Connectors are used to access data from databases directly in Insights. This guide provides resources to help you add connectors to use in your organization. You can download the sample files, read help documentation on the Wiki, or create an issue to ask a question.
+Connectors are used to access data from databases directly in Insights. Insights supports Microsoft SQL Server, Oracle, PostgreSQL, and SAP HANA connectors out-of-the-box. To make database connections accessible to organizations that do not use the supported databases, Insights allows you to add connectors for any relational database that uses a JDBC driver, in addition to the supported databases.
 
-> Note: Adding connections to relational databases that are not on the list of [supported databases](https://doc.arcgis.com/en/insights/latest/administer/supported-databases.htm) is currently in preview.
+This guide provides resources to help you add additional connectors in your organization. You can download the sample files, read help documentation on the Wiki, or create an issue to ask a question.
+
+> Note: Adding connections to additional relational databases that are not supported out-of-the-box is currently in preview.
 
 ## Instructions
 
