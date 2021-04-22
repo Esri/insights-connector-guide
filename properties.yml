@@ -14,7 +14,7 @@
 #
 # 
 # id of the connector type (mandatory)
-id: esri.DBName
+id: sample.DBName
 
 # name of the connector type (mandatory). It is the value displayed in the relational datastore types administration page
 name: Database Name
@@ -40,7 +40,7 @@ properties:
     type: string
     alias: Server Name
     required: true
-  - name: port
+  - name: portNumber
     type: int
     alias: Port Number
     required: false

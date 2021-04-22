@@ -14,7 +14,7 @@
 #
 # 
 # id of the connector type (mandatory)
-id: esri.base
+id: sample.base
 
 super class: # allows your dialect to inherit all unconfigured properties from a parent class. The only available value now is "esri.base" for the base dialect
              # Insights provides
