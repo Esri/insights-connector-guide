@@ -24,7 +24,7 @@ driver: com.myVendor.jdbc.Driver
 
 # Connection URL template for the connector type (mandatory). 
 # Placeholders must be in the format ${name}, and every placeholder must be specified in the properties section below.
-url: jdbc:myVendor://${server}:${port}/${databaseName}:user=${username};password=${password};
+url: jdbc:myVendor://${server}:${portNumber}/${databaseName}:user=${username};password=${password};
 
 # A list of required by JDBC driver to establish connection (mandatory). 
 # All the placeholders in the "url" property must be specified here as they will be used to formulate the connection url. 
@@ -38,20 +38,20 @@ url: jdbc:myVendor://${server}:${port}/${databaseName}:user=${username};password
 properties:
   - name: server
     type: string
-    alias: Server Name
+    alias: Server name
     required: true
   - name: portNumber
     type: int
-    alias: Port Number
+    alias: Port number
     required: false
     default: 1043
   - name: databaseName
     type: string
-    alias: Database Name
+    alias: Database name
     required: true
   - name: username
     type: string
-    alias: User Name
+    alias: User name
     required: true
   - name: password
     type: string
@@ -59,7 +59,7 @@ properties:
     required: true
   - name: SSL
     type: boolean
-    alias: is SSL?
+    alias: Is SSL?
     required: false
     default: false
 

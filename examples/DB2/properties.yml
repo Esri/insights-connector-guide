@@ -21,19 +21,19 @@ properties:
   - name: serverName
     type: string
     required: true
-    alias: Server Name
+    alias: Server name
   - name: portNumber
     type: int
     default: 50000                      
     required: true
-    alias: Port Number
+    alias: Port number
   - name: databaseName
     type: string
-    alias: Database Name
+    alias: Database name
     required: true
   - name: username
     type: string
-    alias: User Name
+    alias: User name
     required: true
   - name: password
     type: string
