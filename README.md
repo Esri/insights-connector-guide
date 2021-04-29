@@ -1,5 +1,7 @@
 # insights-connector-guide
 
+![Insights connectors](https://github.com/Esri/insights-connector-guide/blob/main/img/connectors.png)
+
 Connectors are used to access data from databases directly in Insights. Insights supports Microsoft SQL Server, Oracle, PostgreSQL, and SAP HANA connectors out-of-the-box. To make database connections accessible to organizations that do not use the supported databases, Insights allows you to add connectors for any relational database that uses a JDBC driver, in addition to the supported databases.
 
 This guide provides resources to help you add additional connectors in your organization. You can download the sample files, read help documentation on the Wiki, or create an issue to ask a question.
