@@ -1,0 +1,73 @@
+# Copyright 2021 Esri
+#
+# Licensed under the Apache License Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# 
+# id of the connector type (mandatory)
+id: sample.psql
+
+# name of the connector type (mandatory). It is the value displayed in the relational datastore types administration page
+name: PSQL
+
+# The main class of the JDBC driver (mandatory)
+driver: org.postgresql.Driver
+
+# Connection URL template for the connector type (mandatory). 
+# Placeholders must be in the format ${name}, and every placeholder must be specified in the properties section below.
+url: jdbc:postgresql://${serverName}:${portNumber}/${databaseName}?user=${username}&password=${password}&ssl=${SSL};
+
+# A list of required by JDBC driver to establish connection (mandatory). 
+# All the placeholders in the "url" property must be specified here as they will be used to formulate the connection url. 
+# It also can contain properties not defined in the "url", and these values will be sent separately to the driver as driver properties.
+# Each property can include the following attribute:
+#     1. name  - property name (mandatory). If the property references a placeholder in the "url", its name must be identical to the placeholder
+#     2. alias - property alias (mandatory). It is the displayed name in the Insights app
+#     3. type  - property type (mandatory). It can be either of string, int or boolean
+#     4. required - is the property required (mandatory). If true, user must enter a value when creating new connections for this type
+#     5. default - default value (optional). Default value will be used in creating new connections if a value is configured here
+properties:
+  - name: serverName
+    type: string
+    alias: Server Name
+    required: true
+  - name: portNumber
+    type: int
+    alias: Port Number
+    required: true
+    default: 5432
+  - name: databaseName
+    type: string
+    alias: Database Name
+    required: true
+  - name: username
+    type: string
+    alias: User Name
+    required: true
+  - name: password
+    type: string
+    alias: Password
+    required: true
+  - name: SSL
+    type: boolean
+    alias: is SSL?
+    required: false
+    default: false
+
+# list of schemas to be excluded (Optional). All tables under the listed schema will not appear in Insights
+excluded schemas:
+  - SYS
+
+# A SQL query used to validate if database connection is valid (Optional)
+# The query should not return an empty ResultSet if the connection is valid, and if you want to reference a property defined in the "properties" section,
+# you need to use it in the placeholder format, i.e ${property_name}
+validation query: SELECT 1 WHERE CURRENT_DATABASE() = '${databaseName}'
