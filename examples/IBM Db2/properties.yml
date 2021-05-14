@@ -13,23 +13,35 @@
 # limitations under the License.
 #
 # 
-id: sample.redshift
-name: RedShift
-driver: com.amazon.redshift.jdbc42.Driver
-url: jdbc:redshift://${serverName}:${portNumber}/${databaseName}?ssl=true&UID=${username}&PWD=${password} 
+id: sample.db2
+name: IBM Db2
+driver: com.ibm.db2.jcc.DB2Driver
+url: jdbc:db2://${serverName}:${portNumber}/${databaseName}:user=${username};password=${password};
 properties:
   - name: serverName
     type: string
     required: true
+    alias: Server name
   - name: portNumber
     type: int
+    default: 50000                      
     required: true
+    alias: Port number
   - name: databaseName
     type: string
+    alias: Database name
     required: true
   - name: username
     type: string
+    alias: User name
     required: true
   - name: password
     type: string
+    alias: Password
     required: true
+excluded schemas:
+  - SYSIBMADM
+  - SYSCAT
+  - SYSIBM
+  - SYSTOOLS 
+  - SYSSTAT  
