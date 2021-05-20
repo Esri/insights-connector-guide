@@ -21,53 +21,7 @@ identifier setting:
   close enquote: '`'
   maximum identifier length: 64
 
-sql clauses:
-  find geometry type: >
-    SELECT case when t.s = 'POINT' then 0
-                when t.s = 'MULTIPOINT' then 3
-                when t.s = 'LINESTRING' then 1
-                when t.s = 'POLYGON' then 2
-           END
-    FROM (
-      SELECT ST_GeometryType(${shape}) s
-      FROM ${source}
-      WHERE ${shape} IS NOT NULL
-      LIMIT 1
-    ) t
-
-  find extent: >
-    SELECT min(x1) as `xmin`, max(x2) as `xmax`, min(y1) as `ymin`, max(y2) `ymax`
-    FROM(
-        SELECT ST_X(min_) AS x1, ST_Y(min_) As y1, ST_X(max_) AS x2, ST_Y(max_) as y2
-        FROM (
-          SELECT CASE WHEN ST_Dimension(s.env) = 0
-                   THEN s.env
-                   ELSE ST_PointN(s.env, 1)
-                   END AS min_,
-                CASE WHEN ST_Dimension(s.env) = 0 
-                   THEN s.env
-                   ELSE ST_PointN(s.env, 3)
-                   END AS max_
-          FROM (
-            SELECT ST_Envelope(${shape}) as env
-            FROM (${source}) t
-         ) s
-      ) r
-    ) p
-
 sql functions:
-
-# Spatial Functions
-  - name: st_geometryFromText
-    sql: ST_GeomFromText($0, $1)
-  
-  - name: st_asbinary
-    sql: ST_AsBinary($0)
-
-  - name: st_intersects
-    sql: ST_Intersects($0, $1)
-
-# Unsupported Functions
   - name: mode
     sql: # not supported
 
@@ -109,7 +63,7 @@ sql functions:
     sql: EXTRACT(DAY FROM $0)
 
   - name: extract day of week
-    sql: DAYOFWEEK(CAST($0 AS DATE)) - 1
+    sql: DAYOFWEEK(CAST($0 AS DATE))
 
   - name: extract hour
     sql: EXTRACT(HOUR FROM $0)
@@ -170,19 +124,16 @@ sql functions:
               CASE WHEN length($0) > 2 THEN '%Y-%m-%d' ELSE '%y-%m-%d' END)) END
 
   - name: current timestamp
-    sql: CURRENT_TIMESTAMP
+    sql:  CURRENT_TIMESTAMP
 
   - name: current time
-    sql: CURRENT_TIME
+    sql:  CURRENT_TIME
 
   - name: current date
-    sql: CURRENT_DATE
+    sql:  CURRENT_DATE
 
   - name: now
     sql: CONVERT_TZ(NOW(),@@session.time_zone, '+00:00')
-
-map to field types:
-  GEOMETRY: geometry
 
 column types:
   integer: SIGNED
@@ -204,3 +155,4 @@ date and time sql tokens:
   ms: '%f'
   mon: '%M'
   ampm: '%p'
+
