@@ -63,7 +63,7 @@ sql functions:
     sql: EXTRACT(DAY FROM $0)
 
   - name: extract day of week
-    sql: DAYOFWEEK(CAST($0 AS DATE))
+    sql: DAYOFWEEK(CAST($0 AS DATE)) - 1
 
   - name: extract hour
     sql: EXTRACT(HOUR FROM $0)
