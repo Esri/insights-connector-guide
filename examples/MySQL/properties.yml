@@ -14,7 +14,7 @@
 #
 # 
 id: sample.mysql
-name: MYSQL
+name: MySQL
 driver: com.mysql.jdbc.Driver
 url: jdbc:mysql://${serverName}:${portNumber}/${databaseName}?user=${username}&password=${password}
 properties:
