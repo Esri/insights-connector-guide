@@ -1,4 +1,4 @@
-# Copyright 2021 Esri
+# Copyright 2022 Esri
 #
 # Licensed under the Apache License Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,11 +17,65 @@ id: sample.mysql
 super class: esri.base
 identifier setting:
   escape character: '\'
+  characters to escape: "'"
   open enquote: '`'
   close enquote: '`'
   maximum identifier length: 64
 
+sql clauses:
+  find geometry type: >
+    SELECT case when t.s = 'POINT' then 0
+                when t.s = 'MULTIPOINT' then 3
+                when t.s = 'LINESTRING' then 1
+                when t.s = 'POLYGON' then 2
+                when t.s = 'MULTIPOLYGON' then 2
+           END
+    FROM (
+      SELECT ST_GeometryType(${shape}) s
+      FROM ${source}
+      WHERE ${shape} IS NOT NULL
+      LIMIT 1
+    ) t
+
+  find extent: >
+    SELECT min(x1) as `xmin`, max(x2) as `xmax`, min(y1) as `ymin`, max(y2) `ymax`
+    FROM(
+      SELECT ST_X(min_) AS x1, ST_Y(min_) As y1, ST_X(max_) AS x2, ST_Y(max_) as y2
+      FROM (
+        SELECT CASE WHEN ST_Dimension(s.env) = 0
+                    THEN s.env
+                    ELSE ST_PointN(ST_ExteriorRing(s.env), 1)
+              END AS min_,
+              CASE WHEN ST_Dimension(s.env) = 0
+                    THEN s.env
+                    ELSE ST_PointN(ST_ExteriorRing(s.env), 3)
+                    END AS max_
+        FROM (
+          SELECT ST_Envelope(${shape}) as env
+          FROM (${source}) t
+        ) s
+      ) r
+    ) p
+
+sql capabilities:
+  spatial support: true
+  write back: true
+  requires schema in sql: false
+  
+
 sql functions:
+
+# Spatial Functions
+  - name: st_geometryFromText
+    sql: ST_GeomFromText($0, $1)
+  
+  - name: st_asbinary
+    sql: ST_AsBinary($0)
+
+  - name: st_intersects
+    sql: ST_Intersects($0, $1)
+
+  # Unsupported Functions
   - name: mode
     sql: # not supported
 
@@ -40,8 +94,14 @@ sql functions:
 
   # string functions
   - name: string position
-    sql: LOCATE($0, $1, CASE WHEN $2=0 THEN 1 ELSE $2 END)
+    sql: LOCATE($0, $1)
 
+  - name: string position starting with initial position
+    sql: LOCATE($0, $1, $2)
+
+  - name: string length
+    sql: CHAR_LENGTH($0)
+    
   # Numeric functions
   - name: round to
     sql: ROUND($0, CAST($1 AS SIGNED))
@@ -98,21 +158,42 @@ sql functions:
   - name: create timestamp from components
     sql: >
       CASE WHEN $1 > 12 OR $1 < 1 OR $2 > 31 OR $2 < 1 OR
-        $3 > 24 OR $3 < 1 OR $4 > 60 OR $4 < 0 OR $5 > 60 OR $5 < 0 THEN NULL ELSE
+        $3 > 24 OR $3 < 0 OR $4 > 60 OR $4 < 0 OR $5 > 60 OR $5 < 0 THEN NULL ELSE
         STR_TO_DATE(CONCAT($0,'-',$1,'-',$2,' ',$3,':',$4,':',$5),
               CASE WHEN length($0) > 2 THEN '%Y-%m-%d %H:%i:%s' ELSE '%y-%m-%d %H:%i:%s' END)
       END
+# Description: Creates a timestamp from string 2 possible string timestamp format masks 'YYYY-MM-DD hh24:mi:ss' and 'YY-MM-DD hh24:mi:ss'  
+# Syntax
+# $0 Year part of the date component
+# $1 Month part of the date component
+# $2 Day part of the date component
+# $3 Hour part of the time component
+# $4 Minutes part of the time component
+# $5 Seconds part of the time component
+
 
   - name: create timestamp from text
     sql: STR_TO_DATE($0, '$1')
+# Description: Creates a time from string field using a specified fromat mask
+# Syntax:
+# $0 string to convert to time
+# $1 format string
 
   - name: create time from milliseconds
     sql: Time(CONVERT_TZ(FROM_UNIXTIME($0/1000.0), @@session.time_zone, '+00:00'))
+# Description: Creates a time value from the number of milliseconds
+# Syntax:
+# $0 Milliseconds to convert to time
 
   - name: create time from components
     sql: >
       CASE WHEN $0 > 24 OR $0 < 0 OR $1 > 60 OR $1 < 0 OR $2 > 60 OR $2 < 0 THEN NULL ELSE
       Time(STR_TO_DATE( CONCAT($0,':',$1,':',$2), '%H:%i:%s'))END
+# Description: Creates a time value from a string time format masks  'hh24:mi:ss'   
+# Syntax
+# $0 Hour part of the time component
+# $1 Minutes part of the time component
+# $2 Seconds part of the time component
 
   - name: create date from milliseconds
     sql: Date(FROM_UNIXTIME($0/1000))
@@ -122,21 +203,102 @@ sql functions:
       CASE WHEN $1 > 12 OR $1 < 1 OR $2 > 31 OR $2 < 1 THEN NULL ELSE
       Date(STR_TO_DATE(CONCAT($0,'-',$1,'-',$2),
               CASE WHEN length($0) > 2 THEN '%Y-%m-%d' ELSE '%y-%m-%d' END)) END
+# Description: Creates a date from string 2 possible string date format masks  'YYYY-MM-DD' and 'YY-MM-DD'   
+# Syntax
+# $0 Year part of the date component
+# $1 Month part of the date component
+# $2 Day part of the date component
+
 
   - name: current timestamp
-    sql:  CURRENT_TIMESTAMP
+    sql: CURRENT_TIMESTAMP
 
   - name: current time
-    sql:  CURRENT_TIME
+    sql: CURRENT_TIME
 
   - name: current date
-    sql:  CURRENT_DATE
+    sql: CURRENT_DATE
 
   - name: now
     sql: CONVERT_TZ(NOW(),@@session.time_zone, '+00:00')
 
+  - name: dateadd year
+    sql: DATE_ADD($0, INTERVAL $1 YEAR)
+
+  - name: dateadd month
+    sql: DATE_ADD($0, INTERVAL $1 MONTH)
+
+  - name: dateadd day
+    sql: DATE_ADD($0, INTERVAL $1 DAY)
+
+  - name: dateadd hour
+    sql: DATE_ADD($0, INTERVAL $1 HOUR)
+
+  - name: dateadd minute
+    sql: DATE_ADD($0, INTERVAL $1 MINUTE)
+
+  - name: dateadd second
+    sql: DATE_ADD($0, INTERVAL $1 SECOND)
+
+  - name: truncate
+    sql: TRUNCATE($0, $1)
+ 
+
+  # spatial functions
+  - name: st_x
+    sql: ST_X($0::geometry)
+
+  - name: st_y
+    sql: ST_Y($0::geometry)
+
+  - name: st_within
+    sql: ST_WITHIN($0::geometry, $1::geometry)
+
+  - name: st_geometryFromText
+    sql: ST_GeomFromText($0, $1)
+ 
+  - name: st_geographyFromText
+    sql: # MySQL doesn't support it
+
+  - name: st_intersects
+    sql: ST_Intersects($0, $1)
+    
+  - name: st_asbinary
+    sql: ST_ASBINARY($0)
+
+  - name: make_point
+    sql: ST_SRID(POINT($0, $1), $2)
+
+  - name: st_centroid
+    sql: ST_Centroid($0::geometry)
+
+  - name: st_distance_sphere
+    sql: # MySQL doesn't support transform from 3857 so findnearest tool will not work. ST_Distance_Sphere($0::geometry, $1::geometry)
+    
+  - name: linestring
+    sql: ST_SRID(ST_LineStringFromText(CONCAT('LINESTRING(',CONCAT(ST_X($0),' ',ST_Y($0)), ',', CONCAT(ST_X($1),' ',ST_Y($1)),')')), $2)
+
+  - name: geodesic length
+    sql: # ST_PERIMETER is not supported by MySQL
+
+  - name: geodesic area
+    sql: ST_AREA($0::geometry)
+
+  - name: st_transform
+    sql: st_transform($0::geometry, $1)
+
+  - name: st_buffer
+    sql: # ST_BUFFER($0, $1) MySQL doesn't support geodetic calculation
+
+sql placeholders:
+  geometry: ST_GeomFromWKB(?)
+  
+map to field types:
+  GEOMETRY: geometry
+
 column types:
   integer: SIGNED
+  bigint: UNSIGNED
   float: DECIMAL(38,15)
   string: CHAR(255)
   date: DATE
@@ -149,8 +311,8 @@ date and time sql tokens:
   MM: '%m'
   DD: '%d'
   hh: '%h'
-  hh24: '%H'
-  mi: '%i'
+  HH: '%H'
+  mm: '%i'
   ss: '%s'
   ms: '%f'
   mon: '%M'

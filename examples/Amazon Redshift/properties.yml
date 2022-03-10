@@ -1,4 +1,4 @@
-# Copyright 2021 Esri
+# Copyright 2022 Esri
 #
 # Licensed under the Apache License Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,10 +13,11 @@
 # limitations under the License.
 #
 # 
+# id of the connector type (mandatory)
 id: sample.redshift
 name: Amazon Redshift
 driver: com.amazon.redshift.jdbc42.Driver
-url: jdbc:redshift://${serverName}:${portNumber}/${databaseName}?ssl=true&UID=${username}&PWD=${password} 
+url: jdbc:redshift://${serverName}:${portNumber}/${databaseName}?ssl=true&user=${username}&password=${password} 
 properties:
   - name: serverName
     type: string
