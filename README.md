@@ -6,8 +6,6 @@ Connectors are used to access data from databases directly in Insights. Insights
 
 This guide provides resources to help you add additional connectors in your organization. You can download the sample files, read help documentation on the Wiki, or create an issue to ask a question.
 
-> Note: Adding connections to additional relational databases that are not supported out-of-the-box is currently in preview.
-
 ## Instructions
 
 Complete the following steps to add a connector to your organization:
@@ -20,12 +18,13 @@ For detailed steps, see [Create a connector type bundle](https://github.com/ArcG
 
 ## Requirements
 
-* Insights in ArcGIS Enterprise 2021.1 or Insights desktop 2021.1
+* Insights in ArcGIS Enterprise 2021.1 or higher or Insights desktop 2021.1 or higher
 
 ## Resources
 
 - [Insights connector guide wiki](https://github.com/ArcGIS/insights-connector-guide/wiki)
 - [Insights help documentation](https://www.esri.com/en-us/arcgis/products/arcgis-insights/resources)
+- [Video] [Adding database connectors](https://www.youtube.com/watch?v=IofLgPAN7X8)
 
 ## Issues
 
@@ -36,7 +35,7 @@ Find a bug or want to request a new feature?  Please let us know by submitting a
 Esri welcomes contributions from anyone and everyone. Please see our [guidelines for contributing](https://github.com/esri/contributing).
 
 ## Licensing
-Copyright 2021 Esri
+Copyright 2022 Esri
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
