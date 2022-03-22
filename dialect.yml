@@ -15,11 +15,11 @@
 # 
 
 
-# Id of the connector type (mandatory)
+# ID of the connector type (mandatory)
 id: sample.dialect
 
 
-# Id of the parent dialect. It allows your dialect to inherit all unconfigured properties from a parent dialect.
+# ID of the parent dialect. It allows your dialect to inherit all unconfigured properties from a parent dialect.
 super class: esri.base
 
 # Configures how SQL identifiers will be generated, mandatory if super class is not defined.
