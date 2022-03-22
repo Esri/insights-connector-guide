@@ -1,4 +1,4 @@
-# Copyright 2021 Esri
+# Copyright 2022 Esri
 #
 # Licensed under the Apache License Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,52 +13,72 @@
 # limitations under the License.
 #
 # 
-# id of the connector type (mandatory)
-id: sample.base
 
-super class: # allows your dialect to inherit all unconfigured properties from a parent class. The only available value now is "esri.base" for the base dialect
-             # Insights provides
 
-# configures how SQL identifiers will be generated, mandatory if super class is not defined.
-# -----------------
-# Descriptions:
-# escape character: used to escape special characters. Some common escape characters include \ ' "
-# open and close enquotes: used to quote identifiers, such as names for tables/columns/keys/index
-# maximum identifier length: maximum number of characters allowed for column and table names
+# ID of the connector type (mandatory)
+id: sample.dialect
+
+
+# ID of the parent dialect. It allows your dialect to inherit all unconfigured properties from a parent dialect.
+super class: esri.base
+
+# Configures how SQL identifiers will be generated, mandatory if super class is not defined.
+# See page https://github.com/Esri/insights-connector-guide/wiki/Identifier-Setting for more details
 identifier setting:
-  escape character: '"'
+  escape character: '"'  
+  characters to escape: \'
   open enquote: '"'
   close enquote: '"'
   maximum identifier length: 64
+  table prefix: arcgis_insights_
 
-# configures some important SQL clauses used in Insights, mandatory if super class is not defined
-# Each clause consists of your SQL keyword and placeholders. Insights will replace the placeholders with corresponding contents,
-# so make sure the placeholder names are identical to the ones in each clause below.
-# Consult WIKI page https://github.com/ArcGIS/insights-connector-guide/wiki/Configure-SQL-Clauses for more details on how to configure this section
+# Configures some important SQL clauses used in Insights. The template uses named variables in the format of ${namedVariable} to represent different parts.
+# See page https://github.com/Esri/insights-connector-guide/wiki/SQL-Clauses for more details on how to configure this section
 sql clauses:
   select constant: SELECT ${columns}  
   limit: SELECT * FROM (${source}) t LIMIT ${limit} 
   pagination: SELECT * FROM (${source}) t ORDER BY ${orderby} LIMIT ${limit} OFFSET ${offset}
+  column asc in order by: ${column} ASC
+  column desc in order by: ${column} Desc
+  alter table: ATLER TABLE ${name}
+  add constraint: ADD CONSTRAINT
+  create table: CREATE TABLE ${name} (${columns} ${primaryKeys})
+  create table as: CREATE TABLE ${name} AS ${sql}
+  drop table: DROP TABLE ${name}
+  insert into: INSERT INTO ${name} (${columns}) VALUES ${values}
+  create attribute index: CREATE INDEX ${index} ON ${table} (${columns})
+  create spatial index: # no default configuration
+  find extent: # no default configuration
+  find geometry type: >
+    SELECT CASE WHEN ST_DIMENSION(${shape}) = 0
+           THEN CASE WHEN ST_NPOINTS(${shape}) = 1 THEN 0 ELSE 3 END
+           ELSE ST_DIMENSION(${shape}) END as dimension
+    FROM ${source}
+    WHERE ${shape} IS NOT NULL
+    LIMIT 1
+  get spatial reference: SELECT ST_SRID(${shape}) FROM ${source} WHERE ${shape} IS NOT NULL LIMIT 1
+  validate write permission to schema: #no default clause
+  list schemas: # no default clause
 
 # Configures the capabilities of the database. Default value is false.
-# "Window functions" will affect what analysis is supported in Insights, while the others decide how Insights create SQL queries.
-# -----------------------
-# Descriptions:
-# window functions: If false, functionalities including but not limited to bar chart, OLS, trendldine will not be supported in Insights. 
-# window function in where clause:
-#       true if your database supports syntax like: SELECT 1 WHERE id < AVG(num + id)
-# named parameters in common table expression:
-#       true if your database supports syntax like: WITH some_cte (col1, col2) AS ...
-#       false if your datdabase only supports: WITH some_cte AS ...
-
+# See page https://github.com/Esri/insights-connector-guide/wiki/SQL-Capabilities for more details on how to configure this section
 sql capabilities:
   window functions: true
   window function in where clause: false
   common table expression: true
   named parameters in common table expression: true
+  floating point numbers in partition by: true
+  spatial support: true
+  write back: true
+  support primary key constraint: true
+  support alphanuemric indexes: true
+  support spatial indexes: true
+  support join operation between numbers and strings: true
+  support angular unit spatial reference systems: true
+  requires schema in sql: true
 
-# configures the sql syntax for window functions used in Insights, mandatory if super class is not defined
-# SQL consists of keywords and one or more numbered placeholders
+# Configures the sql syntax for window functions used in Insights. The template uses index-based placeholders, such as $0, $1 etc to represent different parameters
+# See page https://github.com/Esri/insights-connector-guide/wiki/SQL-Functions for more details
 window functions:
   # row number without partition
   # $0: comma separated order by names
@@ -93,6 +113,9 @@ window functions:
   - name: partitioned sliding average
     sql: AVG($0) OVER(PARTITION BY $1 ORDER BY $2 ROWS BETWEEN $3 PRECEDING AND $4 following)
 
+
+# Configures the most common SQL functions used in Insights.
+# See page https://github.com/ArcGIS/insights-connector-guide/wiki/Configure-SQL-Functions for more details
 sql functions:
   # aggregate functions group
   - name: count
@@ -127,8 +150,7 @@ sql functions:
 
   - name: percentile
     sql: PERCENTILE_CONT($0) WITHIN GROUP (ORDER BY $1)
-  # Description: Calculates a percentile based on a continuous distribution of the column value in SQL Server. The result is interpolated and might not be equal to any of the specific values in the column.
-
+  
   # string functions group
   - name: trim
     sql: TRIM(BOTH $0 FROM $1)
@@ -172,126 +194,93 @@ sql functions:
   # date time functions group
   - name: extract year
     sql: DATEPART(year, $0)
-# Description:  returns a year part of a date
+
   - name: extract quarter
     sql: DATEPART(quarter, $0)
-# Description:  returns a quarter part of a date
+
 
   - name: extract month
     sql: DATEPART(month, $0)
-# Description:  returns a month part of a date
+
 
   - name: extract day of month
     sql: DATEPART(day, $0)
-# Description:  returns day of the month part of a date
+
 
   - name: extract day of week
     sql: DATEPART(weekday, $0)
-# Description:  returns day of the week part of a date
+
 
   - name: extract hour
     sql: DATEPART(hour, $0)
-# Description:  returns the hour of the month part of a date time field
+
 
   - name: extract minute
     sql: DATEPART(minute, $0)
-# Description:  returns the hour of the month part of a date time field
+
 
   - name: extract second
     sql: DATEPART(second, $0)
-# Description:  returns the hour of the month part of a date time field
+
 
   - name: datedif year
     sql: DATEDIFF(year, $0, $1)
-# Description: DATEDIFF() function returns the difference between two date time fields in years.
+
 
   - name: datedif month
     sql: DATEDIFF(month, $0, $1)
-# Description: DATEDIFF() function returns the difference between two date time fields in months.
+
 
   - name: datedif day
     sql: DATEDIFF(day, $0, $1)
-# Description: DATEDIFF() function returns the difference between two date time fields in days.
+
 
   - name: datedif hour
     sql: DATEDIFF(hour, $0, $1)
-# Description: DATEDIFF() function returns the difference between two date time fields in hours.
+
 
   - name: datedif minute
     sql: DATEDIFF(minute, $0, $1)
-# Description: DATEDIFF() function returns the difference between two date time fields in minutes.
+
 
   - name: datedif second
     sql: DATEDIFF(second, $0, $1)
-# Description: DATEDIFF() function returns the difference between two date time fields in seconds.
+
 
   - name: create timestamp from milliseconds
     sql: to_timestamp($0/1000.0)
 
   - name: create timestamp from components
     sql: >
-      CASE WHEN $1 > 12 OR $1 < 1 OR $2 > 31 OR $2 < 1 OR
-        $3 > 24 OR $3 < 1 OR $4 > 60 OR $4 < 0 OR $5 > 60 OR $5 < 0 THEN NULL ELSE
         TO_TIMESTAMP($0 || '-' || $1 || '-' || $2 || ' ' || $3 || ':' || $4 || ':' || $5,
               CASE WHEN length($0) > 2 THEN 'YYYY-MM-DD hh24:mi:ss' ELSE 'YY-MM-DD hh24:mi:ss' END)
-      END
-# Description: Creates a timestamp from string 2 possible string timestamp format masks 'YYYY-MM-DD hh24:mi:ss' and 'YY-MM-DD hh24:mi:ss'  
-# Syntax
-# $0 Year part of the date component
-# $1 Month part of the date component
-# $2 Day part of the date component
-# $3 Hour part of the time component
-# $4 Minutes part of the time component
-# $5 Seconds part of the time component
 
   - name: create timestamp from text
     sql: TO_TIMESTAMP($0, '$1')
-# Description: Creates a time from string field using a specified fromat mask
-# Syntax:
-# $0 string to convert to time
-# $1 format string
+
 
   - name: create time from milliseconds
     sql: TO_TIME($0/1000.0)
-# Description: Creates a time value from the number of milliseconds
-# Syntax:
-# $0 Milliseconds to convert to time
+
 
   - name: create time from components
     sql: >
-      CASE WHEN $0 > 24 OR $0 < 0 OR $1 > 60 OR $1 < 0 OR $2 > 60 OR $2 < 0 THEN NULL ELSE
-      TO_TIME( $0 || ':' || $1 || ':' || $2, 'hh24:mi:ss') END
-# Description: Creates a time value from a string time format masks  'hh24:mi:ss'   
-# Syntax
-# $0 Hour part of the time component
-# $1 Minutes part of the time component
-# $2 Seconds part of the time component
+      TO_TIME( $0 || ':' || $1 || ':' || $2, 'hh24:mi:ss')
 
   - name: create date from milliseconds
     sql: TO_DATE($0/1000.0)
 
   - name: create date from components
-    sql: >
-      CASE WHEN $1 > 12 OR $1 < 1 OR $2 > 31 OR $2 < 1 THEN NULL ELSE
-      TO_DATE($0 || '-' || $1 || '-' ||$2,
-              CASE WHEN length($0) > 2 THEN 'YYYY-MM-DD' ELSE 'YY-MM-DD' END) END
-# Description: Creates a date from string 2 possible string date format masks  'YYYY-MM-DD' and 'YY-MM-DD'   
-# Syntax
-# $0 Year part of the date component
-# $1 Month part of the date component
-# $2 Day part of the date component
+    sql: TO_DATE($0 || '-' || $1 || '-' ||$2, CASE WHEN length($0) > 2 THEN 'YYYY-MM-DD' ELSE 'YY-MM-DD' END) 
 
   - name: current timestamp
     sql: CURRENT_TIMESTAMP
-  # Description: returns the current timestamp.
 
   - name: current time
     sql: CURRENT_DATE
-  # Description: returns the current time.
 
   - name: current date
     sql: CURRENT_DATE
-  # Description: returns the current date.
 
   - name: now
     sql: NOW()
@@ -300,12 +289,10 @@ sql functions:
 
   - name: case when else
     sql: CASE WHEN $0 THEN $1 ELSE $2 END
-  # Description: The CASE statement goes through conditions and returns a value when the first condition is met. So, once a condition is true, it will stop reading and return the result. If no conditions are true, it returns the value in the ELSE clause.
-
+ 
   - name: case when
     sql: CASE WHEN $0 THEN $1 END
-  # Description: The CASE statement goes through conditions and returns a value when the first condition is met. So, once a condition is true, it will stop reading and return the result.
-
+  
   - name: is null
     sql: $0 IS NULL
 
@@ -327,11 +314,6 @@ sql functions:
 
   - name: between
     sql: $0 BETWEEN $1 AND $2
-  # Description: Operator selects values within a given range. The values can be numbers, text, or dates.
-  # Syntax:
-  # $0 column being filtered
-  # $1 lower value of the range 
-  # $2 Upper value of the range
 
   - name: not
     sql: NOT($0)
@@ -369,15 +351,12 @@ sql functions:
 
   - name: ln
     sql: LN(NULLIF(CASE WHEN $0 <= 0 THEN NULL ELSE $0 END ,0))
-  # Description: Returns the natural logarithm of a number.
 
   - name: log
     sql: LOG(nullif(CASE WHEN $1 <= 0 THEN NULL ELSE $1 END, 0), CASE WHEN $0 <= 1 THEN NULL ELSE $0 END)
-  # Description: Returns the natural logarithm of a specified number, or the logarithm of the number to the specified base
 
   - name: log10
     sql: LOG10(CASE WHEN $0 <= 0 THEN NULL ELSE $0 END)
-  # Description: Returns the natural logarithm of a number to base-10.
 
   - name: negation
     sql: -($0)
@@ -396,87 +375,60 @@ sql functions:
 
   - name: power
     sql: POWER($0, $1)
-  # Description: Returns the value of a number raised to the power of another number.
 
   - name: mod
     sql: MOD($0, $1)
-  # Description:  Returns the remainder of a number divided by another number.
-  # Syntax:
-  # $0 Column to be deivided
-  # $1 The divisor
 
   - name: round
     sql: ROUND($0)
-  # Description: Rounds a decimal to the closest integer.
 
   - name: round to
     sql: ROUND($0, CAST($1 AS INT))
-  # Description: Rounds a number to a specified number of decimal places.
-  # Syntax:
-  # $0 Column to be rounded
-  # $1 The number of decimal places to round number to. 
   
   - name: ceiling
     sql: CEILING($0)
-  # Description: Returns the smallest integer value that is bigger than or equal to a number.
 
   - name: floor
     sql: FLOOR($0)
-  # Description: Returns the largest integer value that is smaller than or equal to a number.
   
   - name: sign
     sql: SIGN($0)
-  # Description: Returns the sign of a number.
-  # This function will return one of the following:
-  #  If $0 > 0, it returns 1
-  #  If $0 = 0, it returns 0
-  #  If $0 < 0, it returns -1
 
   - name: truncate
     sql: TRUNC($0, $1)
-  # Description: This function truncates a number to the specified number of decimal places.  
-  # Syntax:  
-  # $0 - Column to be truncated (number)
-  # $1 - number of decimal places to truncate to
 
   # conversion functions
   - name: cast
     sql: CAST($0 AS $1)
-  # Description: The CAST() function converts a value (of any type) into a specified data type. The supported data type are shown below in "column types" section
-  # Syntax: 
-  # $0 - Column to be converted
-  # $1 - data type to convert column to {see "column types"}
 
-# Configures the types used for casting, mandatory if super class is not defined
-# for example if the string type is configured as `VARCHAR(255)`, then when Insights needs to cast strings,
-# our SQL will look like `CAST($0 AS VARCHAR(255))`.
-# Make sure the string type has enough length, and the float type has enough precision for your data
+
+# Configures the types used for casting and DDL, mandatory if super class is not defined
+# See page https://github.com/Esri/insights-connector-guide/wiki/Column-Types for more details
 column types:
   integer: integer
-  float: decimal(38,15)
+  bigint: bigint
+  float: float
+  fixed: decimal(38, 8)
   string: varchar(255)
   date: date
   timestamp: timestamp
   time: time
+  geometry: geometry
+
+# Configures the placeholders used in PreparedStatement for different data types 
+# See https://github.com/Esri/insights-connector-guide/wiki/SQL-Placeholders for more details
+sql placeholders:
+  integer: '?'
+  float: '?'
+  fixed: '?'
+  string: '?'
+  date: '?'
+  timestamp: '?'
+  time: '?'
+  geometry: '?'
 
 # Configures the sql syntax for date and time formats, mandatory if section "date format codes" is not defined
-# Left side is the format you will use in DATEVALUE function, and right side is the format SQL you tell us to use in SQL queries.
-# YY: two digit year
-# YYYY: four digit year
-# MM: month (1-12)
-# DD: day of month (1-31)
-# hh: hour (0-12)
-# hh24: hour (0-24)
-# mi: minute
-# ss: second 
-# ms: millisecond
-# mon: month name (January, February etc.)
-# ampm: am or pm
-# --------------------- 
-# Example: Based on the below configuration, for a date string '1999-01-01 10:20:30 am', you must provide us the following format in  
-# DATE VALUE calculation: DATEVALUE('1999-01-01 10:20:30 am', 'YYYY-MM-DD hh:mi:ss ampm'). The letter cases must be the same.
-# Insights will map the format to your configuration on the right, so the above format will be translated to
-# 'yyyy-MM-dd hh:mi:ss am' and used in SQL queries.
+# See page https://github.com/Esri/insights-connector-guide/wiki/String-Date-Conversion for more details
 date and time sql tokens:
   YY: yy
   YYYY: yyyy
@@ -490,14 +442,8 @@ date and time sql tokens:
   mon: mon
   ampm: am
 
-# Configures some shortcut for date and time format mapping (Optional)
-# Left side is the format you will use in DATEVALUE function, and right side is the format SQL you tell us to use in SQL queries.
-# You may configure this section if you have a set of most frequently used formats. If this section exists, Insights will always try to 
-# find an exact match from the list here before trying to assemble one using the `date and time sql tokens` above.
-# You have to configure this section if your database does not use specific tokens for date and time formats, like SQL Server.
-# --------------------
-# Usage: If the format code for 'mm/dd/yyyy' for your database is 101, then you should put "mm/dd/yyyy":101 in this seciton.
-#        When you calculate DATEVALUE(date, 'mm/dd/yyyy') in Insights, we will be able to use the 101 code directly.
+# Configures some shortcut for date and time format mapping 
+# See page https://github.com/Esri/insights-connector-guide/wiki/String-Date-Conversion for more details
 date format codes:
   # US
   "mm/dd/yy": mm/dd/yy
@@ -527,8 +473,8 @@ date format codes:
   "Mon dd, yyyy": mon dd, yyyy
 
 # Configures the state code for different types of sql exceptions. This section is optional, but it helps Insights displays correct error message.
-# Some databases publish their error codes, for example 
-#   Postgres: https://www.postgresql.org/docs/10/errcodes-appendix.html
+# Some databases publish their error codes, for example Postgres: https://www.postgresql.org/docs/10/errcodes-appendix.html
+# See page https://github.com/Esri/insights-connector-guide/wiki/SQL-Error-States for more details
 sql error states:
   invalid datetime format: 22007
   datetime overflow: 22008
