@@ -1,4 +1,4 @@
-# Copyright 2021 Esri
+# Copyright 2022 Esri
 #
 # Licensed under the Apache License Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,14 +15,14 @@
 # 
 
 
-# id of the connector type (mandatory)
+# Id of the connector type (mandatory)
 id: sample.dialect
 
 
-# id of the parent dialect. It allows your dialect to inherit all unconfigured properties from a parent dialect.
+# Id of the parent dialect. It allows your dialect to inherit all unconfigured properties from a parent dialect.
 super class: esri.base
 
-# configures how SQL identifiers will be generated, mandatory if super class is not defined.
+# Configures how SQL identifiers will be generated, mandatory if super class is not defined.
 # See page https://github.com/Esri/insights-connector-guide/wiki/Identifier-Setting for more details
 identifier setting:
   escape character: '"'  
@@ -32,7 +32,7 @@ identifier setting:
   maximum identifier length: 64
   table prefix: arcgis_insights_
 
-# configures some important SQL clauses used in Insights. The template uses named variables in the format of ${namedVariable} to represent different parts.
+# Configures some important SQL clauses used in Insights. The template uses named variables in the format of ${namedVariable} to represent different parts.
 # See page https://github.com/Esri/insights-connector-guide/wiki/SQL-Clauses for more details on how to configure this section
 sql clauses:
   select constant: SELECT ${columns}  
@@ -77,7 +77,7 @@ sql capabilities:
   support angular unit spatial reference systems: true
   requires schema in sql: true
 
-# configures the sql syntax for window functions used in Insights. The template uses index-based placeholders, such as $0, $1 etc to represent different parameters
+# Configures the sql syntax for window functions used in Insights. The template uses index-based placeholders, such as $0, $1 etc to represent different parameters
 # See page https://github.com/Esri/insights-connector-guide/wiki/SQL-Functions for more details
 window functions:
   # row number without partition
@@ -114,7 +114,7 @@ window functions:
     sql: AVG($0) OVER(PARTITION BY $1 ORDER BY $2 ROWS BETWEEN $3 PRECEDING AND $4 following)
 
 
-# configures the most common SQL functions used in Insights.
+# Configures the most common SQL functions used in Insights.
 # See page https://github.com/ArcGIS/insights-connector-guide/wiki/Configure-SQL-Functions for more details
 sql functions:
   # aggregate functions group
