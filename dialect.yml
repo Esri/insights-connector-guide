@@ -23,6 +23,7 @@ id: sample.dialect
 super class: esri.base
 
 # configures how SQL identifiers will be generated, mandatory if super class is not defined.
+# See page https://github.com/Esri/insights-connector-guide/wiki/Identifier-Setting for more details
 identifier setting:
   escape character: '"'  
   characters to escape: \'
@@ -32,7 +33,7 @@ identifier setting:
   table prefix: arcgis_insights_
 
 # configures some important SQL clauses used in Insights. The template uses named variables in the format of ${namedVariable} to represent different parts.
-# See page https://github.com/ArcGIS/insights-connector-guide/wiki/Configure-SQL-Clauses for more details on how to configure this section
+# See page https://github.com/Esri/insights-connector-guide/wiki/SQL-Clauses for more details on how to configure this section
 sql clauses:
   select constant: SELECT ${columns}  
   limit: SELECT * FROM (${source}) t LIMIT ${limit} 
@@ -60,7 +61,7 @@ sql clauses:
   list schemas: # no default clause
 
 # Configures the capabilities of the database. Default value is false.
-# See page https://github.com/ArcGIS/insights-connector-guide/wiki/Configure-SQL-Capabilities for more details on how to configure this section
+# See page https://github.com/Esri/insights-connector-guide/wiki/SQL-Capabilities for more details on how to configure this section
 sql capabilities:
   window functions: true
   window function in where clause: false
@@ -77,7 +78,7 @@ sql capabilities:
   requires schema in sql: true
 
 # configures the sql syntax for window functions used in Insights. The template uses index-based placeholders, such as $0, $1 etc to represent different parameters
-# See page https://github.com/ArcGIS/insights-connector-guide/wiki/Configure-window-functions for more details
+# See page https://github.com/Esri/insights-connector-guide/wiki/SQL-Functions for more details
 window functions:
   # row number without partition
   # $0: comma separated order by names
@@ -402,7 +403,7 @@ sql functions:
 
 
 # Configures the types used for casting and DDL, mandatory if super class is not defined
-# See page https://github.com/ArcGIS/insights-connector-guide/wiki/Configure-Column-Types for more details
+# See page https://github.com/Esri/insights-connector-guide/wiki/Column-Types for more details
 column types:
   integer: integer
   bigint: bigint
@@ -415,7 +416,7 @@ column types:
   geometry: geometry
 
 # Configures the placeholders used in PreparedStatement for different data types 
-# See https://github.com/ArcGIS/insights-connector-guide/wiki/Configure-SQL-Placeholders for more details
+# See https://github.com/Esri/insights-connector-guide/wiki/SQL-Placeholders for more details
 sql placeholders:
   integer: '?'
   float: '?'
@@ -427,7 +428,7 @@ sql placeholders:
   geometry: '?'
 
 # Configures the sql syntax for date and time formats, mandatory if section "date format codes" is not defined
-# See page https://github.com/ArcGIS/insights-connector-guide/wiki/Configure-String-Date-Conversion for more details
+# See page https://github.com/Esri/insights-connector-guide/wiki/String-Date-Conversion for more details
 date and time sql tokens:
   YY: yy
   YYYY: yyyy
@@ -442,7 +443,7 @@ date and time sql tokens:
   ampm: am
 
 # Configures some shortcut for date and time format mapping 
-# See page https://github.com/ArcGIS/insights-connector-guide/wiki/Configure-String-Date-Conversion for more details
+# See page https://github.com/Esri/insights-connector-guide/wiki/String-Date-Conversion for more details
 date format codes:
   # US
   "mm/dd/yy": mm/dd/yy
@@ -472,9 +473,8 @@ date format codes:
   "Mon dd, yyyy": mon dd, yyyy
 
 # Configures the state code for different types of sql exceptions. This section is optional, but it helps Insights displays correct error message.
-# Some databases publish their error codes, for example 
-#   Postgres: https://www.postgresql.org/docs/10/errcodes-appendix.html
-# See page https://github.com/ArcGIS/insights-connector-guide/wiki/Configure-sql-error-states for more details
+# Some databases publish their error codes, for example Postgres: https://www.postgresql.org/docs/10/errcodes-appendix.html
+# See page https://github.com/Esri/insights-connector-guide/wiki/SQL-Error-States for more details
 sql error states:
   invalid datetime format: 22007
   datetime overflow: 22008
