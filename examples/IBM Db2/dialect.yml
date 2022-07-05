@@ -15,26 +15,108 @@
 # 
 id: sample.db2
 super class: esri.base
+
 # mandatory configuration if super class is not defined
 identifier setting:
-  escape character: '\'
+  escape character: "'"
   open enquote: '"'
   close enquote: '"'
-  maximum identifier length: 18
+  maximum identifier length: 128
 
 # mandatory configuration if super class is not defined
 sql clauses:
   select constant: SELECT ${columns} FROM SYSIBM.SYSDUMMY1
 
+  find geometry type: >
+    SELECT case when t.s = '"DB2GSE  "."ST_POINT"' then 0
+                when t.s = '"DB2GSE  "."ST_MULTIPOINT"' then 3
+                when t.s = '"DB2GSE  "."ST_LINESTRING"' then 1
+                when t.s = '"DB2GSE  "."ST_POLYGON"' then 2
+                when t.s = '"DB2GSE  "."ST_MULTIPOLYGON"' then 2
+           END
+    FROM (
+      SELECT ${shape}..ST_GeometryType s
+      FROM ${source}
+      WHERE ${shape} IS NOT NULL
+      LIMIT 1
+    ) t
 
-
-window functions:
-
+  get spatial reference: >
+    SELECT t1.srs_id, organization_coordsys_id FROM DB2GSE.ST_SPATIAL_REFERENCE_SYSTEMS t1 
+    INNER JOIN ${source} t2 ON t1.srs_id=t2.${shape}..ST_SRID() 
+    WHERE t2.${shape} IS NOT NULL LIMIT 1
+    
+  find extent: >
+    SELECT cast (MAX (${shape}..ST_MaxX) as decimal(31, 8)) "xmax", 
+        cast (MIN (${shape}..ST_MinX) as decimal(31, 8)) "xmin", 
+        cast (MAX (${shape}..ST_MaxY) as decimal(31, 8)) "ymax", 
+        cast (MIN (${shape}..ST_MinY) as decimal(31, 8)) "ymin"
+    FROM (${source})
+    
+    
+sql capabilities:
+  spatial support: true
+  write back: true
+  requires schema in sql: false
+  
 sql functions:
+  # aggregate functions group
+  - name: sum
+    sql: SUM(FLOAT($0))  # DB2 SUM() doesn't automatically change to a bigger type when result overflows
 
+  - name: avg
+    sql: AVG(FLOAT($0))  # DB2 AVG() doesn't automatically change to a bigger type when result overflows
+
+  - name: stddev
+    sql: STDDEV_SAMP($0)
+
+  - name: variance
+    sql: VARIANCE_SAMP($0)
+
+  - name: mode
+    sql: #unsupported
+
+  # arithmetic functions
+  - name: log
+    sql: (CASE WHEN $1 <=0 THEN NULL ELSE LN(NULLIF(CASE WHEN $0 <= 0 THEN NULL ELSE $0::FLOAT END ,0)) / LN(NULLIF($1::FLOAT, 10)) END)
+
+  - name: power
+    sql: POWER(FLOAT($0), CASE WHEN $0 < 0 AND CEIL(ABS(MOD($1, 1))) != 0 THEN NULL ELSE $1 END)
+
+  - name: add
+    sql: FLOAT($0) + ($1)
+
+  - name: subtract
+    sql: FLOAT($0) - ($1)
+
+  - name: multiply
+    sql: FLOAT($0) * $1
+
+  - name: divide
+    sql: FLOAT($0)/NULLIF($1,0)
+
+  - name: round to
+    input:
+      - #any type
+      - integer
+    sql: ROUND(DECIMAL($0, 31, 8), $1)
+
+  # string functions
   - name: string position
-    sql: INSTR($1, $0, CASE WHEN $2=0 THEN 1 ELSE $2 END)
+    sql: INSTR($1, $0)
 
+  - name: string position starting with initial position
+    sql: INSTR($1, $0, $2)
+
+  - name: string length
+    sql: LENGTH(CONCAT($0, ''))
+
+  - name: substring
+    input:
+      - string
+      - integer
+      - integer
+    sql: TRIM(SUBSTR($0, $1, $2))
 
   # date time functions group
   - name: extract year
@@ -50,7 +132,9 @@ sql functions:
     sql: DAYOFMONTH($0)
 
   - name: extract day of week
-    sql: DAYOFWEEK($0)
+    # IBM Db2: The DAYOFWEEK function returns an integer, in the range of 1 to 7, that represents the day of the week, where 1 is Sunday and 7 is Saturday.
+    # However, Insights DAYOFWEEK is in the range of 0 to 6 (Sunday to Saturday)
+    sql: DAYOFWEEK($0) - 1
 
   - name: extract hour
     sql: HOUR($0)
@@ -59,43 +143,71 @@ sql functions:
     sql: MINUTE($0)
 
   - name: extract second
-    sql: SECOND( $0)
+    sql: SECOND($0)
 
   - name: datedif year
-    sql: YEARS_BETWEEN($0, $1)
+    sql: YEARS_BETWEEN($1, $0)
 
   - name: datedif month
-    sql: MONTHS_BETWEEN ($0, $1)
+    sql: MONTHS_BETWEEN ($1, $0)
 
   - name: datedif day
-    sql: DAYS_BETWEEN($0, $1)
+    sql: DAYS_BETWEEN($1, $0)
 
   - name: datedif hour
-    sql: HOURS_BETWEEN($0, $1)
+    sql: HOURS_BETWEEN($1, $0)
 
   - name: datedif minute
-    sql: MINUTES_BETWEEN($0, $1)
+    sql: MINUTES_BETWEEN($1, $0)
 
   - name: datedif second
-    sql: SECONDS_BETWEEN($0, $1)
+    sql: SECONDS_BETWEEN($1, $0)
+    
+  - name: dateadd year
+    sql: ADD_YEARS($0, $1)
+
+  - name: dateadd month
+    sql: ADD_MONTHS($0, $1)
+
+  - name: dateadd day
+    sql: ADD_DAYS($0, $1)
+
+  - name: dateadd hour
+    sql: ADD_HOURS(CAST($0 AS TIMESTAMP), $1)
+
+  - name: dateadd minute
+    sql: ADD_MINUTES(CAST($0 AS TIMESTAMP), $1)
+
+  - name: dateadd second
+    sql: ADD_SECONDS(CAST($0 AS TIMESTAMP), $1)
+
+  - name: timeonlyadd hour
+    sql: ADD_HOURS(CAST($0 AS TIMESTAMP), $1)
+
+  - name: timeonlyadd minute
+    sql: ADD_MINUTES(CAST($0 AS TIMESTAMP), $1)
+
+  - name: timeonlyadd second
+    sql: ADD_SECONDS(CAST($0 AS TIMESTAMP), $1)
 
   - name: create timestamp from milliseconds
-    sql: TIMESTAMP ('1970-01-01-00.00.00.00000') + ($0/1000) SECOND
+    sql: ADD_SECONDS(TIMESTAMP('1970-01-01-00.00.00.00000'), $0 * 0.001)
 
   - name: create timestamp from components
     sql: >
       CASE WHEN $1 > 12 OR $1 < 1 OR $2 > 31 OR $2 < 1 OR
-        $3 > 24 OR $3 < 1 OR $4 > 60 OR $4 < 0 OR $5 > 60 OR $5 < 0 THEN NULL ELSE
+        $3 > 24 OR $3 < 0 OR $4 > 60 OR $4 < 0 OR $5 > 60 OR $5 < 0 THEN NULL ELSE
         TIMESTAMP_FORMAT($0 || '-' || $1 || '-' || $2 || ' ' || $3 || ':' || $4 || ':' || $5,
-              CASE WHEN length($0) > 2 THEN 'YYYY-MM-DD HH24:MI:SS' ELSE 'YY-MM-DD HH24:MI:SS' END)
+              CASE WHEN length(CONCAT($0, '')) > 2 THEN 'YYYY-MM-DD HH24:MI:SS' ELSE 'YY-MM-DD HH24:MI:SS' END)
       END
 
+     
   - name: create timestamp from text
     sql: TIMESTAMP_FORMAT($0, '$1')
 
   - name: create time from milliseconds
-    sql: (TIMESTAMP ('1970-01-01-00.00.00.00000') + ($/1000) SECOND)
-    
+    sql: (TIMESTAMP ('1970-01-01-00.00.00.00000') + $0*0.001 SECOND)
+
   - name: create time from components
     sql: >
       CASE WHEN $0 > 24 OR $0 < 0 OR $1 > 60 OR $1 < 0 OR $2 > 60 OR $2 < 0 THEN NULL ELSE
@@ -108,7 +220,7 @@ sql functions:
     sql: >
       CASE WHEN $1 > 12 OR $1 < 1 OR $2 > 31 OR $2 < 1 THEN NULL ELSE
       TO_DATE($0 || '-' || $1 || '-' ||$2,
-              CASE WHEN length($0) > 2 THEN 'YYYY-MM-DD' ELSE 'YY-MM-DD' END) END
+              CASE WHEN length(CONCAT($0, '')) > 2 THEN 'YYYY-MM-DD' ELSE 'YY-MM-DD' END) END
 
   - name: current timestamp
     sql:  CURRENT_TIMESTAMP
@@ -119,7 +231,88 @@ sql functions:
   - name: current date
     sql:  CURRENT_DATE
 
+# Spatial Functions
+  - name: st_geometryFromText
+    sql: DB2GSE.ST_GeomFromText($0, $1)
+  
+  - name: st_asbinary
+    sql: DB2GSE.ST_AsBinary($0) 
 
+  - name: st_intersects
+    sql: DB2GSE.ST_Intersects($0, $1)
+
+  - name: st_x
+    sql: DB2GSE.ST_X($0) 
+
+  - name: st_y
+    sql: DB2GSE.ST_Y($0) 
+
+  - name: st_within
+    sql: DB2GSE.ST_WITHIN($0, $1)
+
+  - name: st_geographyFromText
+    sql: # Db2 doesn't support it
+
+  - name: make_point
+    sql: DB2GSE.ST_POINT($0, $1, $2)
+
+  - name: st_centroid
+    sql: DB2GSE.ST_Centroid($0)
+
+  - name: st_distance_sphere
+    sql: # DB2 doesn't support transform from 3857 so findnearest tool will not work. ST_Distance_Sphere($0::geometry, $1::geometry)
+    
+  - name: linestring
+    sql: DB2GSE.ST_LineString(CONCAT('linestring(',CONCAT(DB2GSE.ST_X($0),' ',DB2GSE.ST_Y($0)), ',', CONCAT(DB2GSE.ST_X($1),' ',DB2GSE.ST_Y($1)),')'), $2)
+
+  - name: geodesic length
+    sql: DB2GSE.ST_PERIMETER($0)
+
+  - name: geodesic area
+    sql: DB2GSE.ST_AREA($0)
+
+  - name: st_transform
+    sql: DB2GSE.ST_Transform($0, $1)
+
+  - name: st_buffer
+    # Db2: DB2GSE.ST_BUFFER(geometry, distance, segments, unit)
+    # segments: An INTEGER value that identifies how many polygon edges are to be used in approximating a quarter circle. The default is 96.
+    # unit: A VARCHAR(128) value that identifies the unit in which distance is measured. The supported units of measure are listed in the SYSGSE.ST_UNITS_OF_MEASURE catalog view.
+    # If unit is not specified, it will determine based on coordinat system. 
+    # Insights uses METRE. We can't let Db2 to figure out it.
+    sql: DB2GSE.ST_BUFFER($0, $1, 96, 'METRE')
+
+
+supported data types:
+  - SMALLINT
+  - INT
+  - INTEGER
+  - BIGINT
+  - NUMERIC
+  - DECIMAL
+  - DECFLOAT
+  - REAL
+  - DOUBLE
+  - CHARACTER
+  - VARCHAR
+  - DATE
+  - TIME
+  - TIMESTAMP
+  - ST_Geometry
+  - '"DB2GSE"."ST_POINT"'
+  - '"DB2GSE"."ST_MULTIPOINT"'
+  - '"DB2GSE"."ST_LINESTRING"'
+  - '"DB2GSE"."ST_POLYGON"'
+  - '"DB2GSE"."ST_MULTIPOLYGON"'
+  
+map to field types:
+  ST_Geometry: geometry
+  ST_POINT: geometry
+  '"DB2GSE"."ST_POINT"': geometry
+  '"DB2GSE"."ST_MULTIPOINT"': geometry
+  '"DB2GSE"."ST_LINESTRING"': geometry
+  '"DB2GSE"."ST_POLYGON"': geometry
+  '"DB2GSE"."ST_MULTIPOLYGON"': geometry
 
 # mandatory configuration if super class is not defined
 column types:
@@ -129,17 +322,18 @@ column types:
   date: date
   timestamp: timestamp
   time: time
+#  geometry: \"DB2GSE  \".\"ST_POINT\"
 
 # If section "date format codes" is not defined, then this section must exist
 date and time sql tokens:
-  YY: yy
-  YYYY: yyyy
+  YY: RR
+  YYYY: YYYY
   MM: MM
   DD: DD
   hh: HH
-  hh24: HH24
-  mi: MI
+  HH: HH24
+  mm: MI
   ss: SS
-  ms: ms
+  ms: FF12
   mon: MON
-  ampm: .a.m.
+  ampm: AM

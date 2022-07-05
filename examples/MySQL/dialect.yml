@@ -61,21 +61,12 @@ sql capabilities:
   spatial support: true
   write back: true
   requires schema in sql: false
+  support full join: false
   
 
 sql functions:
 
-# Spatial Functions
-  - name: st_geometryFromText
-    sql: ST_GeomFromText($0, $1)
-  
-  - name: st_asbinary
-    sql: ST_AsBinary($0)
-
-  - name: st_intersects
-    sql: ST_Intersects($0, $1)
-
-  # Unsupported Functions
+# Unsupported Functions
   - name: mode
     sql: # not supported
 
@@ -162,10 +153,7 @@ sql functions:
         STR_TO_DATE(CONCAT($0,'-',$1,'-',$2,' ',$3,':',$4,':',$5),
               CASE WHEN length($0) > 2 THEN '%Y-%m-%d %H:%i:%s' ELSE '%y-%m-%d %H:%i:%s' END)
       END
-# Description: 
-#    Creates a timestamp from strings. 
-#    Two possible string timestamp format masks: 
-#        'YYYY-MM-DD hh24:mi:ss' and 'YY-MM-DD hh24:mi:ss'
+# Description: Creates a timestamp from string 2 possible string timestamp format masks 'YYYY-MM-DD hh24:mi:ss' and 'YY-MM-DD hh24:mi:ss'  
 # Syntax
 # $0 Year part of the date component
 # $1 Month part of the date component
@@ -177,8 +165,7 @@ sql functions:
 
   - name: create timestamp from text
     sql: STR_TO_DATE($0, '$1')
-# Description: 
-#    Creates a time value from a string field using a specified format mask
+# Description: Creates a time from string field using a specified fromat mask
 # Syntax:
 # $0 string to convert to time
 # $1 format string
@@ -193,9 +180,8 @@ sql functions:
     sql: >
       CASE WHEN $0 > 24 OR $0 < 0 OR $1 > 60 OR $1 < 0 OR $2 > 60 OR $2 < 0 THEN NULL ELSE
       Time(STR_TO_DATE( CONCAT($0,':',$1,':',$2), '%H:%i:%s'))END
-# Description: 
-#    Creates a time value from a string. Time format masks: 'hh24:mi:ss'
-# Syntax:
+# Description: Creates a time value from a string time format masks  'hh24:mi:ss'   
+# Syntax
 # $0 Hour part of the time component
 # $1 Minutes part of the time component
 # $2 Seconds part of the time component
@@ -208,9 +194,7 @@ sql functions:
       CASE WHEN $1 > 12 OR $1 < 1 OR $2 > 31 OR $2 < 1 THEN NULL ELSE
       Date(STR_TO_DATE(CONCAT($0,'-',$1,'-',$2),
               CASE WHEN length($0) > 2 THEN '%Y-%m-%d' ELSE '%y-%m-%d' END)) END
-# Description: 
-#    Creates a date from strings. 
-#    Two possible string date format masks: 'YYYY-MM-DD' and 'YY-MM-DD'
+# Description: Creates a date from string 2 possible string date format masks  'YYYY-MM-DD' and 'YY-MM-DD'   
 # Syntax
 # $0 Year part of the date component
 # $1 Month part of the date component
@@ -304,8 +288,8 @@ map to field types:
   GEOMETRY: geometry
 
 column types:
-  integer: SIGNED
-  bigint: UNSIGNED
+  integer: DECIMAL(10, 0)
+  bigint: BIGINT
   float: DECIMAL(38,15)
   string: CHAR(255)
   date: DATE
