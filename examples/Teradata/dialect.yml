@@ -1,0 +1,600 @@
+# Copyright 2022 Esri
+#
+# Licensed under the Apache License Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# 
+id: sample.teradata
+
+super class: esri.base
+                                
+identifier setting:
+  escape character: "'"
+  characters to escape: \'
+  open enquote: '"'
+  close enquote: '"'
+  maximum identifier length: 127
+
+# mandatory configuration if super class is not defined
+sql clauses:
+  select constant: SELECT ${columns} FROM (SELECT 1 AS "dummy") AS "dual"
+  limit: SELECT Top ${limit} * FROM (${source}) t 
+  pagination: >
+    SELECT TOP ${limit} * FROM (${source}) t ORDER BY ${orderby}
+                                                                                                
+  find geometry type: > # When dimension is 0, check if it is multipoint
+    SELECT case when t.s = 'ST_Point' then 0
+                when t.s = 'ST_MultiPoint' then 3
+                when t.s = 'ST_LineString' then 1
+                when t.s = 'ST_MultiLineString' then 1
+                when t.s = 'ST_Polygon' then 2
+                when t.s = 'ST_MultiPolygon' then 2
+           END
+    FROM (
+      SELECT TOP 1 ${shape}.ST_GeometryType() s
+      FROM ${source}
+      WHERE ${shape} IS NOT NULL
+    ) t
+    
+  find extent: >
+    SELECT MAX("xmax") AS "xmax", MIN("xmin") AS "xmin", MAX("ymax") AS "ymax", MIN("ymin") AS "ymin"
+                                                                                                       
+    FROM (
+      SELECT ${shape}.ST_MaxX() AS "xmax", ${shape}.ST_MinX() AS "xmin", ${shape}.ST_MaxY() AS "ymax", ${shape}.ST_MinY() AS "ymin"
+      FROM (${source}) t
+    ) s
+    
+  get spatial reference: >
+    select s.srid, s.AUTH_SRID from (SELECT top 1 ${shape}.ST_SRID() as tsrid FROM ${source} WHERE ${shape} IS NOT NULL) t 
+        inner join SYSSPATIAL.SPATIAL_REF_SYS s on t.tsrid=s.srid
+
+# Default value for each capability is false
+                                                                  
+sql capabilities:
+  window functions: true
+  window function in where clause: false
+  common table expression: true
+  named parameters in common table expression: true
+  floating point numbers in partition by: true
+                                      
+  support primary key constraint: false                         
+  spatial support: true
+  write back: true                  
+  requires schema in sql: true
+
+window functions:
+  - name: row number
+    sql: ROW_NUMBER() OVER(ORDER BY $0)
+                                                                                      
+  - name: partitioned row number
+    sql: ROW_NUMBER() OVER(PARTITION BY $0 ORDER BY $1)
+
+  - name: average over
+    sql: AVG($0) OVER(PARTITION BY $1)
+
+  - name: count over
+    sql: COUNT($0) OVER()
+                                                                                                                       
+  - name: sliding average
+    sql: AVG($0) OVER(ORDER BY $1 ROWS BETWEEN $2 PRECEDING AND $3 following)
+                                                                                                                              
+  - name: partitioned sliding average
+    sql: AVG($0) OVER(PARTITION BY $1 ORDER BY $2 ROWS BETWEEN $3 PRECEDING AND $4 following)
+
+  - name: sum over
+    sql: SUM($0) OVER(PARTITION BY $1)
+
+  - name: lag over
+    sql: LAG($0) OVER(ORDER BY $1)
+
+sql functions:
+  # aggregate functions group
+  - name: count
+    sql: COUNT($0)
+
+  - name: count distinct
+    sql: COUNT(DISTINCT $0)
+
+  - name: sum
+    sql: SUM(CAST($0 AS FLOAT))
+
+  - name: avg
+    sql: AVG(CAST($0 AS decimal(18,8)))
+
+  - name: max
+    sql: MAX($0)
+
+  - name: min
+    sql: MIN($0)
+
+  - name: stddev
+    sql: STDDEV_SAMP(CAST($0 AS decimal(18,8)))
+
+  - name: variance
+    sql: VARIANCE($0)
+
+  - name: median
+    sql: MEDIAN($0)
+
+  - name: mode
+    sql: # MODE($0) Teradata MODE only works with numeric
+
+  - name: percentile
+    sql: PERCENTILE_CONT($0) WITHIN GROUP (ORDER BY $1)
+
+  # string functions group
+  - name: trim
+    sql: TRIM(BOTH $0 FROM $1)
+
+  - name: left trim
+    sql: TRIM(LEADING $0 FROM $1)
+
+  - name: right trim
+    sql: TRIM(TRAILING $0 FROM $1)
+
+  - name: lower
+    sql: LOWER($0)
+
+  - name: upper
+    sql: UPPER($0)
+
+  - name: string concatenation
+    sql: $0 || $1
+
+  - name: string position
+    sql: POSITION($0 IN $1)
+
+  - name: string position starting with initial position
+    sql: INSTR($1, $0, $2)
+
+  - name: string length
+    sql: LENGTH($0)
+
+  - name: string substitute
+    sql: OREPLACE($0, $1, $2)
+
+  - name: substring
+    sql: SUBSTR($0, $1, $2)
+
+  - name: left
+    sql: LEFT($0, $1)
+
+  - name: right
+    sql: RIGHT($0, $1)
+
+  - name: like
+    sql: $0 LIKE $1
+
+  - name: regexp replace
+    sql: regexp_replace($0, $1, $2)
+
+  - name: regexp like
+    sql: regexp_similar($0, $1) = 1
+
+  # date time functions group
+  - name: extract year
+    sql: EXTRACT(year FROM $0)
+
+  - name: extract quarter
+    sql: ((CAST(EXTRACT(MONTH FROM $0) AS BYTEINT)-1)/3)+1                                       
+
+  - name: extract month
+    sql: EXTRACT(month FROM $0)
+
+  - name: extract day of month
+    sql: EXTRACT(day FROM $0)
+
+  - name: extract day of week
+    sql: td_day_of_week($0) - 1
+
+  - name: extract hour
+    sql: EXTRACT(hour FROM $0)
+
+  - name: extract minute
+    sql: EXTRACT(minute FROM $0)
+
+  - name: extract second
+    sql: EXTRACT(second FROM $0)
+
+  - name: datedif year
+    sql: CAST(((CAST (($1) AS DATE) - CAST (($0) AS DATE)) YEAR) AS INTEGER)
+
+  - name: datedif month
+    sql: MONTHS_BETWEEN(($1), ($0))
+
+  - name: datedif day
+    sql: CAST (($1) AS DATE) - CAST (($0) AS DATE)
+
+  - name: datedif hour
+    sql: >
+      CAST((CAST(($1) AS DATE)- CAST(($0) AS DATE)) AS FLOAT) * 24+ 
+      (EXTRACT(HOUR FROM ($1)) - EXTRACT(HOUR FROM ($0))) 
+
+  - name: datedif minute
+    sql: >
+      CAST((CAST(($1) AS DATE)- CAST(($0) AS DATE)) AS FLOAT) * 60*24+ 
+      ((EXTRACT(HOUR FROM ($1)) - EXTRACT(HOUR FROM ($0))) * 60) + 
+      (EXTRACT(MINUTE FROM ($1)) - EXTRACT(MINUTE FROM ($0)))
+
+  - name: datedif second
+    sql: >
+      CAST((CAST(($1) AS DATE)- CAST(($0) AS DATE)) AS FLOAT) * 60*60*24+ 
+      ((EXTRACT(HOUR FROM ($1)) - EXTRACT(HOUR FROM ($0))) * 60*60) + 
+      ((EXTRACT(MINUTE FROM ($1)) - EXTRACT(MINUTE FROM ($0))) * 60) +
+      (EXTRACT(SECOND FROM ($1)) - EXTRACT(SECOND FROM ($0)))
+      
+  - name: timedif hour
+    sql: EXTRACT(HOUR FROM ($1)) - EXTRACT(HOUR FROM ($0))
+
+  - name: timedif minute
+    sql: >
+      ((EXTRACT(HOUR FROM ($1)) - EXTRACT(HOUR FROM ($0))) * 60) + 
+      (EXTRACT(MINUTE FROM ($1)) - EXTRACT(MINUTE FROM ($0)))
+
+  - name: timedif second
+    sql: >
+      ((EXTRACT(HOUR FROM ($1)) - EXTRACT(HOUR FROM ($0))) * 60*60) + 
+      ((EXTRACT(MINUTE FROM ($1)) - EXTRACT(MINUTE FROM ($0))) * 60) +
+      (EXTRACT(SECOND FROM ($1)) - EXTRACT(SECOND FROM ($0)))
+
+  - name: dateadd year
+    sql: ADD_MONTHS($0, $1 * 12)
+
+  - name: dateadd month
+    sql: ADD_MONTHS($0, $1)
+
+  - name: dateadd day
+    sql: # Teradata doesn't implement DATEADD function. Use interval to add or subtract date units from date/timestamp/time types. 
+         # Here's the example: Date_field + interval '1' day
+         # The interval is literal in string type. It doesn't support any operations in literal.
+
+  - name: dateadd hour
+    sql: # Teradata doesn't implement DATEADD function. Use interval to add or subtract date units from date/timestamp/time types. 
+         # Here's the example: Date_field + interval '1' hour
+         # The interval is literal in string type. It doesn't support any operations in literal.
+
+  - name: dateadd minute
+    sql: # Teradata doesn't implement DATEADD function. Use interval to add or subtract date units from date/timestamp/time types. 
+         # Here's the example: Date_field + interval '1' minute
+         # The interval is literal in string type. It doesn't support any operations in literal.
+
+  - name: dateadd second
+    sql: # Teradata doesn't implement DATEADD function. Use interval to add or subtract date units from date/timestamp/time types. 
+         # Here's the example: Date_field + interval '1' second
+         # The interval is literal in string type. It doesn't support any operations in literal.
+
+  - name: timeonlyadd hour
+    sql: # Teradata doesn't implement DATEADD function. Use interval to add or subtract date units from date/timestamp/time types. 
+         # Here's the example: Date_field + interval '1' hour
+         # The interval is literal in string type. It doesn't support any operations in literal.
+
+  - name: timeonlyadd minute
+    sql: # Teradata doesn't implement DATEADD function. Use interval to add or subtract date units from date/timestamp/time types. 
+         # Here's the example: Date_field + interval '1' minute
+         # The interval is literal in string type. It doesn't support any operations in literal.
+
+  - name: timeonlyadd second
+    sql: # Teradata doesn't implement DATEADD function. Use interval to add or subtract date units from date/timestamp/time types. 
+         # Here's the example: Date_field + interval '1' second
+         # The interval is literal in string type. It doesn't support any operations in literal.
+
+  - name: create timestamp from milliseconds
+    sql: TO_TIMESTAMP(CAST($0 AS BIGINT)/1000) + CAST($0 AS BIGINT) MOD 1000 * INTERVAL '0.001' SECOND
+
+  - name: create timestamp from components
+    sql: >
+      CASE WHEN $1 > 12 OR $1 < 1 OR $2 > 31 OR $2 < 1 OR
+        $3 > 24 OR $3 < 0 OR $4 > 60 OR $4 < 0 OR $5 > 60 OR $5 < 0 THEN NULL ELSE
+        TO_TIMESTAMP(CASE WHEN LENGTH(TRIM(CAST($0 AS VARCHAR(10))))>2
+                THEN LPAD(TRIM(CAST($0 AS VARCHAR(10))), 4, '0')
+                ELSE LPAD(TRIM(CAST($0 AS VARCHAR(10))), 2, '0')
+                END || '-' || LPAD(TRIM(CAST($1 AS VARCHAR(10))), 2, '0') || '-' || TRIM(CAST($2 AS VARCHAR(10))) || ' ' || TRIM(CAST($3 AS VARCHAR(10))) || ':' || TRIM(CAST($4 AS VARCHAR(10))) || ':' || TRIM(CAST($5 AS VARCHAR(10))),
+              CASE WHEN length(TRIM(CAST($0 AS VARCHAR(10)))) > 2 THEN 'YYYY-MM-DD hh24:mi:ss' ELSE 'RR-MM-DD hh24:mi:ss' END)
+      END
+
+  - name: create timestamp from text
+    sql: TO_TIMESTAMP(TRIM($0), '$1')
+
+  - name: create time from milliseconds
+    sql: (($0 / 1000) MOD 86400) * INTERVAL '00:00:01' HOUR TO SECOND
+
+  - name: create time from components
+    sql: >
+      CASE WHEN $0 > 24 OR $0 < 0 OR $1 > 60 OR $1 < 0 OR $2 > 60 OR $2 < 0 THEN NULL ELSE
+      CAST(TO_TIMESTAMP( TRIM(CAST($0 AS VARCHAR(10))) || ':' || TRIM(CAST($1 AS VARCHAR(10))) || ':' || TRIM(CAST($2 AS VARCHAR(10))), 'hh24:mi:ss') AS TIME)
+      END
+ 
+  - name: create date from milliseconds
+    sql: CAST((date '1970-01-01' +($0 / 1000)/86400) AS DATE)
+
+  - name: create date from components
+    sql: >
+      CASE WHEN $1 > 12 OR $1 < 1 OR $2 > 31 OR $2 < 1 
+      THEN NULL 
+      ELSE
+        TO_DATE(CASE WHEN LENGTH(TRIM(CAST($0 AS VARCHAR(10)))) > 2
+                THEN LPAD(TRIM(CAST($0 AS VARCHAR(10))), 4, '0')
+                ELSE LPAD(TRIM(CAST($0 AS VARCHAR(10))), 2, '0')
+                END || '-' ||
+                LPAD(TRIM(CAST($1 AS VARCHAR(10))), 2, '0') || '-' ||
+                TRIM(CAST($2 AS VARCHAR(10))),
+                CASE WHEN length(TRIM(CAST($0 AS VARCHAR(10)))) > 2 THEN 'YYYY-MM-DD' ELSE 'RR-MM-DD' END) 
+      END
+              
+  - name: current timestamp
+    sql: CURRENT_TIMESTAMP
+                                               
+
+  - name: current time
+    sql: CURRENT_TIME
+                                          
+
+  - name: current date
+    sql: CURRENT_DATE
+                                          
+
+  - name: now
+    sql: CURRENT_TIMESTAMP
+
+  # conditional functions group
+
+  - name: case when else
+    sql: CASE WHEN $0 THEN $1 ELSE $2 END
+
+  - name: case when
+    sql: CASE WHEN $0 THEN $1 END
+
+  - name: is null
+    sql: $0 IS NULL
+
+  - name: is not null
+    sql: $0 IS NOT NULL
+
+  - name: nullif
+    sql: nullif($0, $1)
+
+  - name: coalesce
+    sql: COALESCE($0, $1)
+
+  # logical operators
+  - name: and
+    sql: $0 AND $1
+
+  - name: or
+    sql: $0 OR $1
+
+  - name: between
+    sql: $0 BETWEEN $1 AND $2
+
+  - name: not
+    sql: NOT($0)
+
+  # arithmetic functions group
+  - name: abs
+    sql: ABS($0)
+
+  - name: acos
+    sql: ACOS($0)
+
+  - name: asin
+    sql: ASIN($0)
+
+  - name: atan
+    sql: ATAN($0)
+
+  - name: sin
+    sql: SIN($0)
+
+#  - name: sinh
+#    sql: SINH($0)
+
+  - name: cos
+    sql: COS($0)
+
+#  - name: cosh
+#    sql: COSH($0)
+
+  - name: tan
+    sql: TAN($0)
+
+#  - name: tanh
+#    sql: TANH($0)
+
+  - name: ln
+    sql: LN(NULLIF(CASE WHEN $0 <= 0 THEN NULL ELSE CAST($0 AS FLOAT) END ,0))
+                                                           
+
+  - name: log
+    sql: (CASE WHEN $1 <=0 THEN NULL ELSE LN(NULLIF(CASE WHEN $0 <= 0 THEN NULL ELSE CAST($0 AS FLOAT) END ,0)) / LN(NULLIF(CAST($1 AS FLOAT), 10)) END)
+    
+  - name: log10
+    sql: LOG(CASE WHEN $0 <= 0 THEN NULL ELSE CAST($0 AS FLOAT) END)
+
+  - name: negation
+    sql: -($0)
+
+  - name: add
+    sql: (CAST($0 AS double precision)) + ($1)
+
+  - name: subtract
+    sql: (CAST($0 AS double precision)) - ($1)
+
+  - name: multiply
+    sql: CAST($0 AS double precision) * $1
+
+  - name: divide
+    sql: CAST($0 AS double precision) / NULLIF($1,0)
+
+  - name: power
+    sql: ($0)**(CASE WHEN $0 < 0 AND CEIL(ABS(CAST($1 AS double precision) MOD 1)) <> 0 THEN NULL ELSE $1 END)
+
+  - name: mod
+    sql: $0 MOD $1
+ 
+  - name: round
+    sql: ROUND(CAST($0 AS double precision))
+                                                         
+  - name: round to
+    sql: ROUND(CAST($0 AS double precision), CAST($1 AS INT))
+  
+  - name: ceiling
+    sql: CEILING($0)
+
+  - name: floor
+    sql: FLOOR($0)
+
+  - name: sign
+    sql: SIGN($0)
+
+  - name: truncate
+    sql: TRUNC($0, $1)
+
+
+  # conversion functions
+  - name: cast
+    sql: CAST($0 AS $1)
+
+  # spatial functions
+  - name: st_geometryFromText
+    sql: SYSSPATIAL.ST_GeomFromText($0, $1)
+
+  - name: st_asbinary
+    sql: $0.ST_AsBinary()
+
+  - name: st_intersects
+    sql: $0.ST_Intersects($1)=1
+
+  - name: st_transform
+    sql: # need to create an issue in insights-service to accept 4 arguments, $0.ST_Transform($1, $2, $3)
+
+  - name: st_centroid
+    sql: $0.ST_Centroid()
+
+  - name: st_within
+    sql: $0.ST_Within($1)
+
+  - name: st_distance_sphere
+    sql: $0.ST_Distance($1)
+    
+  - name: linestring
+    sql: ST_MakeLine($0, $1)
+
+  - name: make_point
+    sql: ST_SetSRID(ST_Point($0, $1), $2)
+
+  - name: geodesic length
+    sql: ($0).ST_Length()  
+
+  - name: geodesic area
+    sql: ($0).ST_Area() 
+
+  - name: st_x
+    sql: ST_X($0)
+
+  - name: st_y
+    sql: ST_Y($0)
+
+    
+supported data types:
+  - BIGINT
+  - CHAR
+  - CHARACTER
+  - CHARACTER VARYING
+  - DATE
+  - DECIMAL
+  - DOUBLE
+  - DOUBLE PRECISION
+  - FLOAT
+  - FLOAT4
+  - FLOAT8
+  - INT
+  - INT2
+  - INT4
+  - INT8
+  - INTEGER
+  - NCHAR
+  - NVARCHAR
+  - BPCHAR
+  - NUMBER
+  - NUMERIC
+  - REAL
+  - SMALLINT
+  - TEXT
+  - TIME
+  - TIME WITHOUT TIME ZONE
+  - TIMESTAMP
+  - TIMESTAMP WITHOUT TIME ZONE
+  - VARCHAR
+  - SYSUDTLIB.ST_GEOMETRY
+
+map to field types:
+  "SYSUDTLIB.ST_GEOMETRY": GEOMETRY
+  TIME: time
+  
+                                                                                                    
+column types:
+  integer: int
+  float: float
+  fixed: numeric(38, 15)     
+  string: varchar(4800)
+  date: date
+  timestamp: timestamp
+  time: time
+  geometry: ST_GEOMETRY
+                                                   
+date and time sql tokens:
+  YY: RR
+  YYYY: YYYY
+  MM: MM
+  DD: DD
+  hh: HH
+  HH: HH24
+  mm: MI
+  ss: SS
+  ms: MS
+  mon: mon
+  ampm: am
+
+date format codes:
+  # US
+  "mm/dd/yy": mm/dd/yy
+  "mm/dd/yyyy": mm/dd/yyyy
+  # ANSI
+  "yy.mm.dd": yy.mm.dd
+  "yyyy.mm.dd": yyyy.mm.dd
+  # British/French
+  "dd/mm/yy": dd/mm/yy
+  "dd/mm/yyyy": dd/mm/yyyy
+  # German
+  "dd.mm.yy": dd.mm.yy
+  "dd.mm.yyyy": dd.mm.yyyy
+  # Italian
+  "dd-mm-yy": dd-mm-yy
+  "dd-mm-yyyy": dd-mm-yyyy
+  # Japan
+  "yy/mm/dd": yy/mm/dd
+  "yyyy/mm/dd": yyyy/mm/dd
+  # ISO
+  "yymmdd": yymmdd
+  "yyyymmdd": yyyymmdd
+  # month name
+  "dd mon yy": dd mon yy
+  "dd mon yyyy": dd mon yyyy
+  "Mon dd, yy": mon dd, yy
+  "Mon dd, yyyy": mon dd, yyyy
+        
+sql error states:
+  invalid datetime format: 1205
+  datetime overflow: 1207
+  query cancelled: 57014
+  connection failed: 500150
+  cannot connect now: 500150        
