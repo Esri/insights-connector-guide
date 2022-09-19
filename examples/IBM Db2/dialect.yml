@@ -256,6 +256,9 @@ sql functions:
   - name: make_point
     sql: DB2GSE.ST_POINT($0, $1, $2)
 
+  - name: make_geography_point
+    sql: DB2GSE.ST_POINT($0, $1, $2)
+
   - name: st_centroid
     sql: DB2GSE.ST_Centroid($0)
 

@@ -489,6 +489,9 @@ sql functions:
   - name: make_point
     sql: ST_SetSRID(ST_Point($0, $1), $2)
 
+  - name: make_geography_point
+    sql: ST_Point($0, $1)::geography
+
   - name: geodesic length
     sql: # Redshift doesn't support geodesic area. The ST_Area in Redshift can't specify the unit. The area units are the same as the units in which the coordinates of the input geometry are expressed. 
 

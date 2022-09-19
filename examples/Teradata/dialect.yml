@@ -491,6 +491,9 @@ sql functions:
   - name: make_point
     sql: ST_SetSRID(ST_Point($0, $1), $2)
 
+  - name: make_geography_point
+    sql: ST_SetSRID(ST_Point($0, $1), $2)
+
   - name: geodesic length
     sql: ($0).ST_Length()  
 

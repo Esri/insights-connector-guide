@@ -260,6 +260,9 @@ sql functions:
   - name: make_point
     sql: ST_SRID(POINT($0, $1), $2)
 
+  - name: make_geography_point
+    sql: geography::Point($0, $1, $2)
+
   - name: st_centroid
     sql: ST_Centroid($0::geometry)
 
