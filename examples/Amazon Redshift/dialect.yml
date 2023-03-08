@@ -28,6 +28,8 @@ identifier setting:
 # mandatory configuration if super class is not defined
 sql clauses:
   select constant: SELECT ${columns}
+  column asc in order by: ${column} ASC nulls first
+  column desc in order by: ${column} DESC nulls last
   limit: SELECT * FROM (${source}) t LIMIT ${limit}
   pagination: SELECT * FROM (${source}) t ORDER BY ${orderby} LIMIT ${limit} OFFSET ${offset}
 
