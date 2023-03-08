@@ -60,8 +60,8 @@ sql clauses:
       FROM (SELECT ST_Extent(${shape}::geometry) AS extent FROM (${source}) p) q) s
   get spatial reference: >
     SELECT ST_SRID(${shape}) FROM ${source} WHERE ${shape} IS NOT NULL LIMIT 1
-  column asc in order by: ${column} ASC
-  column desc in order by: ${column} DESC
+  column asc in order by: ${column} ASC nulls first
+  column desc in order by: ${column} DESC nulls last
   create attribute index: CREATE INDEX ${index} ON ${table} (${columns})
   create spatial index: CREATE INDEX ${index} ON ${table} USING GIST (${shape})
 # Configures the capabilities of the database. Default value is false.

@@ -26,7 +26,9 @@ identifier setting:
 # mandatory configuration if super class is not defined
 sql clauses:
   select constant: SELECT ${columns} FROM SYSIBM.SYSDUMMY1
-
+  column asc in order by: ${column} ASC nulls first
+  column desc in order by: ${column} DESC nulls last
+  
   find geometry type: >
     SELECT case when t.s = '"DB2GSE  "."ST_POINT"' then 0
                 when t.s = '"DB2GSE  "."ST_MULTIPOINT"' then 3
