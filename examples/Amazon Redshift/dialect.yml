@@ -31,7 +31,7 @@ sql clauses:
   column asc in order by: ${column} ASC nulls first
   column desc in order by: ${column} DESC nulls last
   limit: SELECT * FROM (${source}) t LIMIT ${limit}
-  pagination: SELECT * FROM (${source}) t ORDER BY ${orderby} LIMIT ${limit} OFFSET ${offset}
+  pagination: SELECT ${columns} FROM (${source}) t ORDER BY ${orderby} LIMIT ${limit} OFFSET ${offset}
 
   find geometry type: > # When dimension is 0, check if it is multipoint
     SELECT case when t.s = 'ST_Point' then 0
@@ -251,60 +251,61 @@ sql functions:
 #DATEDIFF(second, $0, $1)
 # Description: DATEDIFF() function returns the difference between two date time fields in seconds.
   - name: timedif hour
-    sql: EXTRACT(HOUR FROM $0) - EXTRACT(HOUR FROM $1)
+    sql: (EXTRACT(HOUR FROM $1) - EXTRACT(HOUR FROM $0))
 #DATEDIFF(hour, $0, $1)
 #DATE_PART(hour, $1::time - $0::time)
 # Description: DATEDIFF() function returns the difference between two date time fields in hours.
 
   - name: timedif minute
-    sql: (EXTRACT(HOUR FROM $0) - EXTRACT(HOUR FROM $1)) * 60 + EXTRACT(MINUTE FROM $0) - EXTRACT(MINUTE FROM $1)
+    sql: (EXTRACT(HOUR FROM $1) - EXTRACT(HOUR FROM $0)) * 60 + EXTRACT(MINUTE FROM $1) - EXTRACT(MINUTE FROM $0)
 #DATEDIFF(minute, $0, $1)
 #DATE_PART(hour, $1::time - $0::time) * 60 + DATE_PART(minute, $1::time - $0::time)
 # Description: DATEDIFF() function returns the difference between two date time fields in minutes.
 
   - name: timedif second
-    sql:  ((EXTRACT(HOUR FROM $0) - EXTRACT(HOUR FROM $1)) * 60 + EXTRACT(MINUTE FROM $0) - EXTRACT(MINUTE FROM $1)) * 60 + EXTRACT(SECOND FROM $0) - EXTRACT(SECOND FROM $1)
+    sql:  ((EXTRACT(HOUR FROM $1) - EXTRACT(HOUR FROM $0)) * 60 + EXTRACT(MINUTE FROM $1) - EXTRACT(MINUTE FROM $0)) * 60 + EXTRACT(SECOND FROM $1) - EXTRACT(SECOND FROM $0)
 #DATEDIFF(second, $0, $1)
 # Description: DATEDIFF() function returns the difference between two date time fields in seconds.
 # (DATE_PART(hour, $1::time - $0::time) * 60 + DATE_PART(minute, $1::time - $0::time)) * 60 + DATE_PART(second, $1::time - $0::time)
 #((EXTRACT(HOUR FROM $0) - EXTRACT(HOUR FROM $1)) * 360 + (EXTRACT(MINUTE FROM $0) - EXTRACT(MINUTE FROM $1)) * 60 + EXTRACT(SECOND FROM $0) - EXTRACT(SECOND FROM $1)) AS "result"
 #((EXTRACT(HOUR FROM $0) - EXTRACT(HOUR FROM $1)) * 60 + EXTRACT(MINUTE FROM $0) - EXTRACT(MINUTE FROM $1)) * 60 + EXTRACT(SECOND FROM $0) - EXTRACT(SECOND FROM $1)                                                                                                  
   - name: dateadd year
-    sql: DATEADD(month, $1::int * 12, $0)
+    sql: DATEADD(month, ($1)::int * 12, $0)
 
   - name: dateadd month
-    sql: DATEADD(month, $1::int, $0)
+    sql: DATEADD(month, ($1)::int, $0)
 
   - name: dateadd day
-    sql: DATEADD(day, $1::int, $0)
+    sql: DATEADD(day, ($1)::int, $0)
 
   - name: dateadd hour
-    sql: DATEADD(hour, $1::int, $0)
+    sql: DATEADD(hour, ($1)::int, $0)
 
   - name: dateadd minute
-    sql: DATEADD(minute, $1::int, $0)
+    sql: DATEADD(minute, ($1)::int, $0)
 
   - name: dateadd second
-    sql: DATEADD(second, $1::int, $0)
+    sql: DATEADD(second, ($1)::int, $0)
 
   - name: timeonlyadd hour
-    sql: DATEADD(hour, $1::int, $0)
+    sql: DATEADD(hour, ($1)::int, $0)
 
   - name: timeonlyadd minute
-    sql: DATEADD(minute, $1:int, $0)
+    sql: DATEADD(minute, ($1):int, $0)
 
   - name: timeonlyadd second
-    sql: DATEADD(second, $1::int, $0)
+    sql: DATEADD(second, ($1)::int, $0)
 
   - name: create timestamp from milliseconds
     sql: TIMESTAMP 'epoch' + $0 * interval '0.001 second'
 
   - name: create timestamp from components
     sql: >
-      CASE WHEN $1 > 12 OR $1 < 1 OR $2 > 31 OR $2 < 1 OR
+       CASE WHEN $1 > 12 OR $1 < 1 OR $2 > 31 OR $2 < 1 OR
         $3 > 24 OR $3 < 0 OR $4 > 60 OR $4 < 0 OR $5 > 60 OR $5 < 0 THEN NULL ELSE
-        TO_TIMESTAMP($0 || '-' || $1 || '-' || $2 || ' ' || RIGHT('0'||$3,2) || ':' || $4 || ':' || $5,
-              CASE WHEN length($0) > 2 THEN 'YYYY-MM-DD hh24:mi:ss' ELSE 'YY-MM-DD hh24:mi:ss' END)::timestamp without time zone
+        CASE WHEN length($0) > 2 THEN TO_TIMESTAMP($0 || '-' || $1 || '-' || $2 || ' ' || RIGHT('0'||$3,2) || ':' || $4 || ':' || $5,'YYYY-MM-DD hh24:mi:ss')::timestamp without time zone
+        ELSE TO_TIMESTAMP($0 || '-' || $1 || '-' || $2 || ' ' || RIGHT('0'||$3,2) || ':' || $4 || ':' || $5,'YY-MM-DD hh24:mi:ss')::timestamp without time zone
+       END
       END
       
   - name: create timestamp from text
@@ -477,7 +478,7 @@ sql functions:
     sql: # not supported                                        
 
   - name: st_centroid
-    sql: # not supported
+    sql: ST_CENTROID($0)
 
   - name: st_within
     sql: ST_Within($0, $1)
@@ -490,6 +491,9 @@ sql functions:
 
   - name: make_point
     sql: ST_SetSRID(ST_Point($0, $1), $2)
+   
+  - name: make_point_geography
+    sql: CASE WHEN $0 BETWEEN -180 AND 180 AND $1 BETWEEN -90 AND 90 THEN ST_SetSRID(ST_POINT($0, $1), $2) END
 
   - name: geodesic length
     sql: # Redshift doesn't support geodesic area. The ST_Area in Redshift can't specify the unit. The area units are the same as the units in which the coordinates of the input geometry are expressed. 
