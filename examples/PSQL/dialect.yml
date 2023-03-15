@@ -64,79 +64,6 @@ sql clauses:
   column desc in order by: ${column} DESC nulls last
   create attribute index: CREATE INDEX ${index} ON ${table} (${columns})
   create spatial index: CREATE INDEX ${index} ON ${table} USING GIST (${shape})
-  
-  boxplot: >
-    SELECT 1 as category,
-           min(base.q1) as q1,
-           min(base.median) as median,
-           min(base.q3) as q3,
-           min(CASE WHEN s.${valueField} < minimumWhisker THEN s.${valueField} ELSE NULL END) as "lowMin",
-           max(CASE WHEN s.${valueField} < minimumWhisker THEN s.${valueField} ELSE NULL END) as "lowMax",
-           count(CASE WHEN s.${valueField} < minimumWhisker THEN s.${valueField} ELSE NULL END) as "lowCount",
-           min(CASE WHEN s.${valueField} > maximumWhisker THEN s.${valueField} ELSE NULL END) as "highMin",
-           max(CASE WHEN s.${valueField} > maximumWhisker THEN s.${valueField} ELSE NULL END) as "highMax",
-           count(CASE WHEN s.${valueField} >= maximumWhisker THEN s.${valueField} ELSE NULL END) as "highCount",
-           max(CASE WHEN s.${valueField} <= maximumWhisker and s.${valueField} >= base.q3 THEN s.${valueField} ELSE NULL END) as "maximum",
-           min(CASE WHEN s.${valueField} >= minimumWhisker and s.${valueField} <= base.q1 THEN s.${valueField} ELSE NULL END) as "minimum"
-    FROM (${source}) s
-    CROSS JOIN
-    (
-        SELECT minimum,
-               case when total < 5 then null else q1 end as q1,
-               case when total < 5 then null else median end as median,
-               case when total < 5 then null else q3 end as q3,
-               maximum,
-               case when total < 5 then null else q3+(q3-q1) * 1.5 end  as maximumWhisker,
-               case when total < 5 then null else q1-(q3-q1)*1.5 end as minimumWhisker
-        FROM (
-            SELECT
-                    count(${valueField}) as total,
-                    min(${valueField}) as minimum,
-                    percentile_cont(0.25) WITHIN GROUP (ORDER BY ${valueField}) as q1,
-                    percentile_cont(0.5) WITHIN GROUP (ORDER BY ${valueField}) as median,
-                    percentile_cont(0.75) WITHIN GROUP (ORDER BY ${valueField}) as q3,
-                    max(${valueField}) as maximum
-            FROM (${source}) b
-        ) b
-    ) base
-
-  boxplot with category: >
-        SELECT s.${categoryField} as category,
-               min(base.q1) as q1,
-               min(base.median) as median,
-        	   min(base.q3) as q3,
-               min(CASE WHEN s.${valueField} < minimumWhisker THEN s.${valueField} ELSE NULL END) as "lowMin",
-        	   max(CASE WHEN s.${valueField} < minimumWhisker THEN s.${valueField} ELSE NULL END) as "lowMax",
-        	   count(CASE WHEN s.${valueField} < minimumWhisker THEN s.${valueField} ELSE NULL END) as "lowCount",
-        	   min(CASE WHEN s.${valueField} > maximumWhisker THEN s.${valueField} ELSE NULL END) as "highMin",
-        	   max(CASE WHEN s.${valueField} > maximumWhisker THEN s.${valueField} ELSE NULL END) as "highMax",
-               count(CASE WHEN s.${valueField} >= maximumWhisker THEN s.${valueField} ELSE NULL END) as "highCount",
-        	   max(CASE WHEN s.${valueField} <= maximumWhisker and s.${valueField} >= base.q3 THEN s.${valueField} ELSE NULL END) as "maximum",
-        	   min(CASE WHEN s.${valueField} >= minimumWhisker and s.${valueField} <= base.q1 THEN s.${valueField} ELSE NULL END) as "minimum"
-        FROM (${source}) s
-        INNER JOIN
-        (
-        	SELECT
-                   ${categoryField},
-                   case when total < 5 then null else q1 end as q1,
-                   case when total < 5 then null else median end as median,
-                   case when total < 5 then null else q3 end as q3,
-                   case when total < 5 then null else q3+(q3-q1) * 1.5 end  as maximumWhisker,
-                   case when total < 5 then null else q1-(q3-q1)*1.5 end as minimumWhisker
-        	FROM (
-        		SELECT
-                        ${categoryField},
-                        count(${valueField}) as total,
-        				percentile_cont(0.25) WITHIN GROUP (ORDER BY ${valueField}) as q1,
-        				percentile_cont(0.5) WITHIN GROUP (ORDER BY ${valueField}) as median,
-        				percentile_cont(0.75) WITHIN GROUP (ORDER BY ${valueField}) as q3
-        		FROM (${source}) b
-                group by ${categoryField}
-        	) b
-        ) base on (s.${categoryField} = base.${categoryField}) or
-                  (s.${categoryField} is null and base.${categoryField} is null)
-        where s.${valueField} is not null
-        group by s.${categoryField}
         
 # Configures the capabilities of the database. Default value is false.
 # "Window functions" will affect what analysis is supported in Insights, while the others decide how Insights create SQL queries.
@@ -159,7 +86,6 @@ sql capabilities:
   single row insert: true
   spatial support: true
   write back: true
-  requires schema in sql: true
   support alphanumeric indexes: true
   support spatial indexes: true
   support join operation between numbers and strings: true
