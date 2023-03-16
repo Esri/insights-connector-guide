@@ -90,16 +90,16 @@ sql functions:
     sql: POWER(FLOAT($0), CASE WHEN $0 < 0 AND CEIL(ABS(MOD($1, 1))) != 0 THEN NULL ELSE $1 END)
 
   - name: add
-    sql: DECFLOAT($0) + ($1)
+    sql: FLOAT($0) + ($1)
 
   - name: subtract
-    sql: DECFLOAT($0) - ($1)
+    sql: FLOAT($0) - ($1)
 
   - name: multiply
-    sql: DECFLOAT($0) * ($1)
+    sql: FLOAT($0) * ($1)
 
   - name: divide
-    sql: DECFLOAT($0)/NULLIF($1,0)
+    sql: FLOAT($0)/NULLIF($1,0)
 
   - name: round to
     sql: ROUND(DECIMAL($0, 31, 8), $1)
