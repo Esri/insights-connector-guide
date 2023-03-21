@@ -332,7 +332,7 @@ map to field types:
 column types:
   integer: int
   float: float
-  fixed: decimal(38, 8)
+  fixed: decimal(31, 8)
   string: varchar(255)
   date: date
   timestamp: timestamp
