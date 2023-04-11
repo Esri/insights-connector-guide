@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 #
-id: esri.db2
+id: sample.db2
 super class: esri.base
 
 # mandatory configuration if super class is not defined
