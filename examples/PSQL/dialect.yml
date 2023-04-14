@@ -17,7 +17,7 @@
 id: sample.psql
 
 super class: esri.base
-             # Insights provides
+# Insights provides
 
 # configures how SQL identifiers will be generated, mandatory if super class is not defined.
 # -----------------
@@ -30,16 +30,16 @@ identifier setting:
   open enquote: '"'
   close enquote: '"'
   maximum identifier length: 64
-  table prefix: arcgis_insights_   
-  index prefix: arcgis_insights_index_  
+  table prefix: arcgis_insights_
+  index prefix: arcgis_insights_index_
 
 # configures some important SQL clauses used in Insights, mandatory if super class is not defined
 # Each clause consists of your SQL keyword and placeholders. Insights will replace the placeholders with corresponding contents,
 # so make sure the placeholder names are identical to the ones in each clause below.
 # Consult WIKI page https://github.com/ArcGIS/insights-connector-guide/wiki/Configure-SQL-Clauses for more details on how to configure this section
 sql clauses:
-  select constant: SELECT ${columns}  
-  limit: SELECT * FROM (${source}) t LIMIT ${limit} 
+  select constant: SELECT ${columns}
+  limit: SELECT * FROM (${source}) t LIMIT ${limit}
   pagination: SELECT * FROM (${source}) t ORDER BY ${orderby} LIMIT ${limit} OFFSET ${offset}
   alter table: ALTER TABLE ${name}
   add constraint: ADD CONSTRAINT
@@ -64,6 +64,7 @@ sql clauses:
   column desc in order by: ${column} DESC nulls last
   create attribute index: CREATE INDEX ${index} ON ${table} (${columns})
   create spatial index: CREATE INDEX ${index} ON ${table} USING GIST (${shape})
+        
 # Configures the capabilities of the database. Default value is false.
 # "Window functions" will affect what analysis is supported in Insights, while the others decide how Insights create SQL queries.
 # -----------------------
@@ -85,11 +86,10 @@ sql capabilities:
   single row insert: true
   spatial support: true
   write back: true
-  requires schema in sql: true
   support alphanumeric indexes: true
   support spatial indexes: true
   support join operation between numbers and strings: true
-                    
+
 # configures the sql syntax for window functions used in Insights, mandatory if super class is not defined
 # SQL consists of keywords and one or more numbered placeholders
 window functions:
@@ -165,7 +165,7 @@ sql functions:
     sql: PERCENTILE_CONT(0.5) WITHIN GROUP(ORDER BY $0)
 
   - name: mode
-    sql: MODE($0)
+    sql: MODE() WITHIN GROUP(ORDER BY $0)
 
   - name: percentile
     sql: PERCENTILE_CONT($0) WITHIN GROUP (ORDER BY $1)
@@ -229,79 +229,79 @@ sql functions:
   # date time functions group
   - name: extract year
     sql: DATE_PART('year', $0)
-# Description:  returns a year part of a date
+  # Description:  returns a year part of a date
   - name: extract quarter
     sql: DATE_PART('quarter', $0)
-# Description:  returns a quarter part of a date
+  # Description:  returns a quarter part of a date
 
   - name: extract month
     sql: DATE_PART('month', $0)
-# Description:  returns a month part of a date
+  # Description:  returns a month part of a date
 
   - name: extract day of month
     sql: DATE_PART('day', $0)
-# Description:  returns day of the month part of a date
+  # Description:  returns day of the month part of a date
 
   - name: extract day of week
     sql: DATE_PART('dow', $0)
-# Description:  returns day of the week part of a date
+  # Description:  returns day of the week part of a date
 
   - name: extract hour
     sql: DATE_PART('hour', $0)
-# Description:  returns the hour of the month part of a date time field
+  # Description:  returns the hour of the month part of a date time field
 
   - name: extract minute
     sql: DATE_PART('minute', $0)
-# Description:  returns the hour of the month part of a date time field
+  # Description:  returns the hour of the month part of a date time field
 
   - name: extract second
     sql: DATE_PART('second', $0)
-# Description:  returns the hour of the month part of a date time field
+  # Description:  returns the hour of the month part of a date time field
 
   - name: datedif year
     sql: round((date_part('epoch',($1)::date) - date_part('epoch', ($0)::date))::numeric/60/60/24/365)
 
-# Description: DATEDIFF() function returns the difference between two date time fields in years.
+  # Description: DATEDIFF() function returns the difference between two date time fields in years.
 
   - name: datedif month
     sql: trunc(date_part('year',age(($1)::date, ($0)::date))*12 + date_part('months',age(($1)::date, ($0)::date)))::numeric
-#DATEDIFF(month, $0, $1)
-# Description: DATEDIFF() function returns the difference between two date time fields in months.
+  #DATEDIFF(month, $0, $1)
+  # Description: DATEDIFF() function returns the difference between two date time fields in months.
 
   - name: datedif day
     sql: trunc((date_part('epoch', $1) - date_part('epoch', $0))::numeric/60/60/24)
-#DATEDIFF(day, $0, $1)
-# Description: DATEDIFF() function returns the difference between two date time fields in days.
+  #DATEDIFF(day, $0, $1)
+  # Description: DATEDIFF() function returns the difference between two date time fields in days.
 
   - name: datedif hour
     sql: trunc((date_part('epoch', $1) - date_part('epoch', $0))::numeric/60/60)
-#DATEDIFF(hour, $0, $1)
-# Description: DATEDIFF() function returns the difference between two date time fields in hours.
+  #DATEDIFF(hour, $0, $1)
+  # Description: DATEDIFF() function returns the difference between two date time fields in hours.
 
   - name: datedif minute
     sql: trunc((date_part('epoch', $1) - date_part('epoch', $0))::numeric/60)
-#DATEDIFF(minute, $0, $1)
-# Description: DATEDIFF() function returns the difference between two date time fields in minutes.
+  #DATEDIFF(minute, $0, $1)
+  # Description: DATEDIFF() function returns the difference between two date time fields in minutes.
 
   - name: datedif second
     sql: (trunc(date_part('epoch', $1) - date_part('epoch', $0))::NUMERIC)
-#DATEDIFF(second, $0, $1)
-# Description: DATEDIFF() function returns the difference between two date time fields in seconds.
+  #DATEDIFF(second, $0, $1)
+  # Description: DATEDIFF() function returns the difference between two date time fields in seconds.
 
   - name: timedif hour
     sql: DATE_PART('hour', $1::time - $0::time)
-#DATEDIFF(hour, $0, $1)
-# Description: DATEDIFF() function returns the difference between two date time fields in hours.
+  #DATEDIFF(hour, $0, $1)
+  # Description: DATEDIFF() function returns the difference between two date time fields in hours.
 
   - name: timedif minute
     sql: DATE_PART('hour', $1::time - $0::time) * 60 + DATE_PART('minute', $1::time - $0::time)
-#DATEDIFF(minute, $0, $1)
-# Description: DATEDIFF() function returns the difference between two date time fields in minutes.
+  #DATEDIFF(minute, $0, $1)
+  # Description: DATEDIFF() function returns the difference between two date time fields in minutes.
 
   - name: timedif second
     sql:  (DATE_PART('hour', $1::time - $0::time) * 60 + DATE_PART('minute', $1::time - $0::time)) * 60 + DATE_PART('second', $1::time - $0::time)
-#DATEDIFF(second, $0, $1)
-# Description: DATEDIFF() function returns the difference between two date time fields in seconds.
+  #DATEDIFF(second, $0, $1)
+  # Description: DATEDIFF() function returns the difference between two date time fields in seconds.
 
   - name: dateadd year
     sql: $0 + ($1* interval '1 year')
@@ -340,37 +340,37 @@ sql functions:
         TO_TIMESTAMP($0 || '-' || $1 || '-' || $2 || ' ' || RIGHT('0' || $3, 2) || ':' || $4 || ':' || $5,
               CASE WHEN length($0::text) > 2 THEN 'YYYY-MM-DD hh24:mi:ss' ELSE 'YY-MM-DD hh24:mi:ss' END)::timestamp without time zone
       END
-# Description: Creates a timestamp from string 2 possible string timestamp format masks 'YYYY-MM-DD hh24:mi:ss' and 'YY-MM-DD hh24:mi:ss'  
-# Syntax
-# $0 Year part of the date component
-# $1 Month part of the date component
-# $2 Day part of the date component
-# $3 Hour part of the time component
-# $4 Minutes part of the time component
-# $5 Seconds part of the time component
+  # Description: Creates a timestamp from string 2 possible string timestamp format masks 'YYYY-MM-DD hh24:mi:ss' and 'YY-MM-DD hh24:mi:ss'
+  # Syntax
+  # $0 Year part of the date component
+  # $1 Month part of the date component
+  # $2 Day part of the date component
+  # $3 Hour part of the time component
+  # $4 Minutes part of the time component
+  # $5 Seconds part of the time component
 
   - name: create timestamp from text
     sql: TO_TIMESTAMP($0, '$1')::timestamp without time zone
-# Description: Creates a time from string field using a specified fromat mask
-# Syntax:
-# $0 string to convert to time
-# $1 format string
+  # Description: Creates a time from string field using a specified fromat mask
+  # Syntax:
+  # $0 string to convert to time
+  # $1 format string
 
   - name: create time from milliseconds
     sql: (TO_TIMESTAMP($0/1000.0)  AT TIME ZONE 'UTC') ::time
-# Description: Creates a time value from the number of milliseconds
-# Syntax:
-# $0 Milliseconds to convert to time
+  # Description: Creates a time value from the number of milliseconds
+  # Syntax:
+  # $0 Milliseconds to convert to time
 
   - name: create time from components
     sql: >
       CASE WHEN $0 > 24 OR $0 < 0 OR $1 > 60 OR $1 < 0 OR $2 > 60 OR $2 < 0 THEN NULL ELSE
       ($0 || ':' || $1 || ':' || $2)::time END
-# Description: Creates a time value from a string time format masks  'hh24:mi:ss'   
-# Syntax
-# $0 Hour part of the time component
-# $1 Minutes part of the time component
-# $2 Seconds part of the time component
+  # Description: Creates a time value from a string time format masks  'hh24:mi:ss'
+  # Syntax
+  # $0 Hour part of the time component
+  # $1 Minutes part of the time component
+  # $2 Seconds part of the time component
 
   - name: create date from milliseconds
     sql: (TO_TIMESTAMP($0::DOUBLE PRECISION/1000.0) AT TIME ZONE 'UTC')
@@ -380,21 +380,15 @@ sql functions:
       CASE WHEN $1 > 12 OR $1 < 1 OR $2 > 31 OR $2 < 1 THEN NULL ELSE
       TO_DATE($0 || '-' || $1 || '-' ||$2,
               CASE WHEN length($0::text) > 2 THEN 'YYYY-MM-DD' ELSE 'YY-MM-DD' END) END
-# Description: Creates a date from string 2 possible string date format masks  'YYYY-MM-DD' and 'YY-MM-DD'   
-# Syntax
-# $0 Year part of the date component
-# $1 Month part of the date component
-# $2 Day part of the date component
+  # Description: Creates a date from string 2 possible string date format masks  'YYYY-MM-DD' and 'YY-MM-DD'
+  # Syntax
+  # $0 Year part of the date component
+  # $1 Month part of the date component
+  # $2 Day part of the date component
 
   - name: generate time series
     sql: Generate_series($0, $1, '$2 $3')
- 
-  - name: timestamp add interval
-    sql: $0::timestamp + '$1 $2'
- 
-  - name: time add interval
-    sql: $0::time + '$1 $2'
-  
+
   - name: time from hours minutes seconds
     sql: >
       CASE WHEN $0 > 24 OR $0 < 0 OR $1 > 60 OR $1 < 0 OR $2 > 60 OR $2 < 0 THEN NULL ELSE
@@ -537,7 +531,7 @@ sql functions:
   # Syntax:
   # $0 Column to be rounded
   # $1 The number of decimal places to round number to. 
-  
+
   - name: ceiling
     sql: CEILING($0)
   # Description: Returns the smallest integer value that is bigger than or equal to a number.
@@ -545,7 +539,7 @@ sql functions:
   - name: floor
     sql: FLOOR($0)
   # Description: Returns the largest integer value that is smaller than or equal to a number.
-  
+
   - name: sign
     sql: SIGN($0)
   # Description: Returns the sign of a number.
@@ -593,13 +587,13 @@ sql functions:
 
   - name: st_geometryFromText
     sql: ST_GeomFromText($0, $1)
- 
+
   - name: st_geographyFromText
     sql: ST_GeographyFromText($0)
 
   - name: st_intersects
     sql: ST_Intersects($0, $1)
-    
+
   - name: st_asbinary
     sql: ST_ASBINARY($0)
 
@@ -611,7 +605,7 @@ sql functions:
 
   - name: st_distance_sphere
     sql: ST_DistanceSphere($0::geometry, $1::geometry)
-    
+
   - name: linestring
     sql: ST_SetSrid(ST_MakeLine($0::geometry, $1::geometry), $2)
 
@@ -626,7 +620,7 @@ sql functions:
 
   - name: st_buffer
     sql: ST_BUFFER($0::GEOGRAPHY, $1)
-    
+
 # mandatory configuration if super class is not defined
 
 
@@ -636,7 +630,7 @@ sql functions:
 # Make sure the string type has enough length, and the float type has enough precision for your data
 column types:
   integer: integer
-  float: double precision
+  float: numeric
   fixed: numeric(38, 15)
   string: varchar(255)
   date: date

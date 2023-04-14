@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# 
+#
 id: sample.db2
 super class: esri.base
 
@@ -26,9 +26,10 @@ identifier setting:
 # mandatory configuration if super class is not defined
 sql clauses:
   select constant: SELECT ${columns} FROM SYSIBM.SYSDUMMY1
+  create table as: CREATE TABLE ${name} AS (${sql}) WITH DATA
   column asc in order by: ${column} ASC nulls first
   column desc in order by: ${column} DESC nulls last
-  
+
   find geometry type: >
     SELECT case when t.s = '"DB2GSE  "."ST_POINT"' then 0
                 when t.s = '"DB2GSE  "."ST_MULTIPOINT"' then 3
@@ -47,20 +48,23 @@ sql clauses:
     SELECT t1.srs_id, organization_coordsys_id FROM DB2GSE.ST_SPATIAL_REFERENCE_SYSTEMS t1 
     INNER JOIN ${source} t2 ON t1.srs_id=t2.${shape}..ST_SRID() 
     WHERE t2.${shape} IS NOT NULL LIMIT 1
-    
+
   find extent: >
     SELECT cast (MAX (${shape}..ST_MaxX) as decimal(31, 8)) "xmax", 
         cast (MIN (${shape}..ST_MinX) as decimal(31, 8)) "xmin", 
         cast (MAX (${shape}..ST_MaxY) as decimal(31, 8)) "ymax", 
         cast (MIN (${shape}..ST_MinY) as decimal(31, 8)) "ymin"
     FROM (${source})
-    
-    
+   
+   
+  create table: CREATE TABLE ${name} (${columns})
+
+
 sql capabilities:
   spatial support: true
   write back: true
   requires schema in sql: false
-  
+
 sql functions:
   # aggregate functions group
   - name: sum
@@ -85,6 +89,9 @@ sql functions:
   - name: power
     sql: POWER(FLOAT($0), CASE WHEN $0 < 0 AND CEIL(ABS(MOD($1, 1))) != 0 THEN NULL ELSE $1 END)
 
+  - name: atan2
+    sql: ATAN2($0, $1)
+    
   - name: add
     sql: FLOAT($0) + ($1)
 
@@ -92,15 +99,12 @@ sql functions:
     sql: FLOAT($0) - ($1)
 
   - name: multiply
-    sql: FLOAT($0) * $1
+    sql: FLOAT($0) * ($1)
 
   - name: divide
     sql: FLOAT($0)/NULLIF($1,0)
 
   - name: round to
-    input:
-      - #any type
-      - integer
     sql: ROUND(DECIMAL($0, 31, 8), $1)
 
   # string functions
@@ -113,12 +117,11 @@ sql functions:
   - name: string length
     sql: LENGTH(CONCAT($0, ''))
 
+  - name: string concatenation
+    sql: ($0) || ($1)
+
   - name: substring
-    input:
-      - string
-      - integer
-      - integer
-    sql: TRIM(SUBSTR($0, $1, $2))
+    sql: TRIM(SUBSTRING($0, $1, $2))
 
   # date time functions group
   - name: extract year
@@ -164,9 +167,18 @@ sql functions:
 
   - name: datedif second
     sql: SECONDS_BETWEEN($1, $0)
-    
+
   - name: dateadd year
     sql: ADD_YEARS($0, $1)
+
+  - name: timedif hour
+    sql: TIMESTAMPDIFF(8, CHAR($1 - $0))
+
+  - name: timedif minute
+    sql: TIMESTAMPDIFF(4, CHAR($1 - $0))
+
+  - name: timedif second
+    sql: TIMESTAMPDIFF(2, CHAR($1 - $0))
 
   - name: dateadd month
     sql: ADD_MONTHS($0, $1)
@@ -184,13 +196,13 @@ sql functions:
     sql: ADD_SECONDS(CAST($0 AS TIMESTAMP), $1)
 
   - name: timeonlyadd hour
-    sql: ADD_HOURS(CAST($0 AS TIMESTAMP), $1)
+    sql: CAST(ADD_HOURS('1970-01-01 ' || CAST($0 AS VARCHAR(20)), $1) AS TIME)
 
   - name: timeonlyadd minute
-    sql: ADD_MINUTES(CAST($0 AS TIMESTAMP), $1)
+    sql: CAST(ADD_MINUTES('1970-01-01 ' || CAST($0 AS VARCHAR(20)), $1) AS TIME)
 
   - name: timeonlyadd second
-    sql: ADD_SECONDS(CAST($0 AS TIMESTAMP), $1)
+    sql: CAST(ADD_SECONDS('1970-01-01 ' || CAST($0 AS VARCHAR(20)), $1) AS TIME)
 
   - name: create timestamp from milliseconds
     sql: ADD_SECONDS(TIMESTAMP('1970-01-01-00.00.00.00000'), $0 * 0.001)
@@ -203,12 +215,12 @@ sql functions:
               CASE WHEN length(CONCAT($0, '')) > 2 THEN 'YYYY-MM-DD HH24:MI:SS' ELSE 'YY-MM-DD HH24:MI:SS' END)
       END
 
-     
+
   - name: create timestamp from text
     sql: TIMESTAMP_FORMAT($0, '$1')
 
   - name: create time from milliseconds
-    sql: (TIMESTAMP ('1970-01-01-00.00.00.00000') + $0*0.001 SECOND)
+    sql: CAST(ADD_SECONDS(TIMESTAMP ('1970-01-01-00.00.00.00000') , $0*0.001) AS TIME)
 
   - name: create time from components
     sql: >
@@ -233,21 +245,21 @@ sql functions:
   - name: current date
     sql:  CURRENT_DATE
 
-# Spatial Functions
+  # Spatial Functions
   - name: st_geometryFromText
     sql: DB2GSE.ST_GeomFromText($0, $1)
-  
+
   - name: st_asbinary
-    sql: DB2GSE.ST_AsBinary($0) 
+    sql: DB2GSE.ST_AsBinary($0)
 
   - name: st_intersects
     sql: DB2GSE.ST_Intersects($0, $1)
 
   - name: st_x
-    sql: DB2GSE.ST_X($0) 
+    sql: DB2GSE.ST_X(DB2GSE.ST_ToPoint($0))
 
   - name: st_y
-    sql: DB2GSE.ST_Y($0) 
+    sql: DB2GSE.ST_Y(DB2GSE.ST_ToPoint($0))
 
   - name: st_within
     sql: DB2GSE.ST_WITHIN($0, $1)
@@ -259,13 +271,13 @@ sql functions:
     sql: DB2GSE.ST_POINT($0, $1, $2)
 
   - name: st_centroid
-    sql: DB2GSE.ST_Centroid($0)
+    sql: #DB2 ST_CENTROID calculates of center of shape columns' bounding box instead of true centroid. The findnearest tool in Insights will not be available
 
   - name: st_distance_sphere
-    sql: # DB2 doesn't support transform from 3857 so findnearest tool will not work. ST_Distance_Sphere($0::geometry, $1::geometry)
-    
+    sql: DB2GSE.ST_DISTANCE($0, $1, 'METER')
+
   - name: linestring
-    sql: DB2GSE.ST_LineString(CONCAT('linestring(',CONCAT(DB2GSE.ST_X($0),' ',DB2GSE.ST_Y($0)), ',', CONCAT(DB2GSE.ST_X($1),' ',DB2GSE.ST_Y($1)),')'), $2)
+    sql: DB2GSE.ST_LineString('linestring(' || DB2GSE.ST_X(DB2GSE.ST_ToPoint($0))||' '||DB2GSE.ST_Y(DB2GSE.ST_ToPoint($0))||','||DB2GSE.ST_X(DB2GSE.ST_ToPoint($1))||' '||DB2GSE.ST_Y(DB2GSE.ST_ToPoint($1))||')', $2)
 
   - name: geodesic length
     sql: DB2GSE.ST_PERIMETER($0)
@@ -280,7 +292,7 @@ sql functions:
     # Db2: DB2GSE.ST_BUFFER(geometry, distance, segments, unit)
     # segments: An INTEGER value that identifies how many polygon edges are to be used in approximating a quarter circle. The default is 96.
     # unit: A VARCHAR(128) value that identifies the unit in which distance is measured. The supported units of measure are listed in the SYSGSE.ST_UNITS_OF_MEASURE catalog view.
-    # If unit is not specified, it will determine based on coordinat system. 
+    # If unit is not specified, it will determine based on coordinat system.
     # Insights uses METRE. We can't let Db2 to figure out it.
     sql: DB2GSE.ST_BUFFER($0, $1, 96, 'METRE')
 
@@ -300,13 +312,13 @@ supported data types:
   - DATE
   - TIME
   - TIMESTAMP
-  - ST_Geometry
+  - Geometry
   - '"DB2GSE"."ST_POINT"'
   - '"DB2GSE"."ST_MULTIPOINT"'
   - '"DB2GSE"."ST_LINESTRING"'
   - '"DB2GSE"."ST_POLYGON"'
   - '"DB2GSE"."ST_MULTIPOLYGON"'
-  
+
 map to field types:
   ST_Geometry: geometry
   ST_POINT: geometry
@@ -320,12 +332,17 @@ map to field types:
 column types:
   integer: int
   float: float
+  fixed: decimal(31, 8)
   string: varchar(255)
   date: date
   timestamp: timestamp
   time: time
-#  geometry: \"DB2GSE  \".\"ST_POINT\"
+  geometry: DB2GSE.ST_Geometry
 
+# used to formulate INSERT INTO statement;
+sql placeholders:
+  geometry: DB2GSE.ST_GeomFromWKB(?)
+  
 # If section "date format codes" is not defined, then this section must exist
 date and time sql tokens:
   YY: RR
