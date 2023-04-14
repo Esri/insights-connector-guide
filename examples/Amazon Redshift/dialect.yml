@@ -305,8 +305,7 @@ sql functions:
         $3 > 24 OR $3 < 0 OR $4 > 60 OR $4 < 0 OR $5 > 60 OR $5 < 0 THEN NULL ELSE
         CASE WHEN length($0) > 2 THEN TO_TIMESTAMP($0 || '-' || $1 || '-' || $2 || ' ' || RIGHT('0'||$3,2) || ':' || $4 || ':' || $5,'YYYY-MM-DD hh24:mi:ss')::timestamp without time zone
         ELSE TO_TIMESTAMP($0 || '-' || $1 || '-' || $2 || ' ' || RIGHT('0'||$3,2) || ':' || $4 || ':' || $5,'YY-MM-DD hh24:mi:ss')::timestamp without time zone
-       END
-      END
+       END END
       
   - name: create timestamp from text
     sql: (TO_TIMESTAMP($0, '$1')::timestamp without time zone)
