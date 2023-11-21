@@ -477,7 +477,7 @@ sql functions:
     sql: # not supported                                        
 
   - name: st_centroid
-    sql: ST_CENTROID($0)
+    sql: # not supported
 
   - name: st_within
     sql: ST_Within($0, $1)
