@@ -1,0 +1,20 @@
+id: sample.trino
+name: TRINO
+driver: io.trino.jdbc.TrinoDriver
+url: jdbc:trino://${serverName}:${portNumber}/${databaseName}?user=${username}&password=${password}&SSL=true&SSLVerification=NONE
+properties:
+  - name: serverName
+    type: string
+    required: true
+  - name: portNumber
+    type: int
+    required: true
+  - name: username
+    type: string
+    required: true
+  - name: password
+    type: string
+    required: true
+  - name: databaseName
+    type: string
+    required: true
