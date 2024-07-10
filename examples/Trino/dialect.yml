@@ -1,0 +1,466 @@
+id: sample.trino
+super class: esri.base
+
+# mandatory configuration if super class is not defined
+identifier setting:
+  escape character: "'"
+  open enquote: '"'
+  close enquote: '"'
+  maximum identifier length: 128
+
+# mandatory configuration if super class is not defined
+sql clauses:
+
+  pagination: SELECT ${columns} FROM (${source}) t ORDER BY ${orderby} OFFSET ${offset} LIMIT ${limit}
+  create table: CREATE TABLE ${name} (${columns})
+  find geometry type: >
+    SELECT case when t.s = 'ST_Point' then 0
+                when t.s = 'ST_MultiPoint' then 3
+                when t.s = 'ST_LineString' then 1
+                when t.s = 'ST_Polygon' then 2
+                when t.s = 'ST_MultiPolygon' then 2
+           END
+    FROM (
+      SELECT ST_GEOMETRYTYPE(${shape}) s
+      FROM ${source}
+      WHERE ${shape} IS NOT NULL
+      LIMIT 1
+    ) t
+    
+    
+  find extent: >
+    SELECT MAX (ST_XMAX(${shape}))  "xmax", 
+        MIN (ST_XMIN(${shape}))  "xmin", 
+        MAX (ST_YMAX(${shape}))  "ymax", 
+        MIN (ST_YMIN(${shape}))  "ymin"
+    FROM (${source})
+    
+  get spatial reference: # No SR concept in Trino
+    
+sql capabilities:
+  spatial support: true
+  write back: true
+  requires schema in sql: true
+  support alphanumeric indexes: false
+  enable location from live data coordinates: true
+  
+sql functions:
+    # aggregate functions group
+  - name: count
+    sql: COUNT($0)
+
+  - name: count distinct
+    sql: COUNT(DISTINCT $0)
+
+  - name: sum
+    sql: SUM($0)
+
+  - name: avg
+    sql: AVG($0)
+
+  - name: max
+    sql: MAX($0)
+
+  - name: min
+    sql: MIN($0)
+
+  - name: stddev
+    sql: STDDEV($0)
+
+  - name: variance
+    sql: VARIANCE($0)
+
+  - name: median
+    sql: # not supported
+
+  - name: mode
+    sql: # not supported
+
+  - name: percentile
+    sql: # not supported
+
+  # string functions group
+  - name: trim
+    sql: TRIM(BOTH $0 FROM $1)
+
+  - name: left trim
+    sql: TRIM(LEADING $0 FROM $1)
+
+  - name: right trim
+    sql: TRIM(TRAILING $0 FROM $1)
+
+  - name: lower
+    sql: LOWER($0)
+
+  - name: upper
+    sql: UPPER($0)
+
+  - name: string concatenation
+    sql: format('%s', $0) || format('%s', $1)
+
+  - name: string position
+    sql: POSITION($0 IN $1)
+
+  - name: string position starting with initial position
+    sql: POSITION($0 IN SUBSTR($1, $2))
+
+  - name: string length
+    sql: LENGTH($0)
+
+  - name: string substitute
+    sql: REPLACE($0, $1, $2)
+
+  - name: substring
+    sql: SUBSTRING($0, $1, $2)
+
+  - name: left
+    sql: SUBSTR($0, 0, $1)
+
+  - name: right
+    sql: SUBSTR($0, CASE WHEN LENGTH($0)-$1 < 0 THEN 0 ELSE LENGTH($0)-$1 END)
+
+  - name: like
+    sql: $0 LIKE $1
+
+  - name: regexp replace
+    sql: regexp_replace($0, $1, $2)
+
+  - name: regexp like
+    sql: regexp_like($0, $1)
+
+  # date time functions group
+  - name: extract date
+    sql: CAST($0 AS date)
+
+  - name: extract time
+    sql: CAST($0 AS time)
+
+  - name: extract year
+    sql: year($0)
+
+  - name: extract quarter
+    sql: quarter($0)
+
+  - name: extract month
+    sql: month($0)
+
+  - name: extract day of month
+    sql: day($0)
+
+  - name: extract day of week
+    sql: dow($0)
+
+  - name: extract hour
+    sql: hour($0)
+
+  - name: extract minute
+    sql: minute($0)
+
+  - name: extract second
+    sql: second($0)
+
+  - name: datedif year
+    sql: DATE_DIFF('year', $0, $1)
+
+  - name: datedif month
+    sql: DATE_DIFF('month', $0, $1)
+
+  - name: datedif day
+    sql: DATE_DIFF('day', $0, $1)
+
+  - name: datedif hour
+    sql: DATE_DIFF('hour', $0, $1)
+
+  - name: datedif minute
+    sql: DATE_DIFF('minute', $0, $1)
+
+  - name: datedif second
+    sql: DATE_DIFF('second', $0, $1)
+
+  - name: timedif hour
+    sql: DATE_DIFF('hour', $0, $1)
+
+  - name: timedif minute
+    sql: DATE_DIFF('minute', $0, $1)
+
+  - name: timedif second
+    sql: DATE_DIFF('second', $0, $1)
+
+  - name: dateadd year
+    sql: DATE_ADD('year', $1, $0)
+
+  - name: dateadd month
+    sql: DATE_ADD('month', $1, $0)
+
+  - name: dateadd day
+    sql: DATE_ADD('day', $1, $0)
+
+  - name: dateadd hour
+    sql: DATE_ADD('hour', $1, $0)
+
+  - name: dateadd minute
+    sql: DATE_ADD('minute', $1, $0)
+
+  - name: dateadd second
+    sql: DATE_ADD('second', $1, $0)
+
+  - name: timeonlyadd hour
+    sql: DATE_ADD('hour', $1, $0)
+
+  - name: timeonlyadd minute
+    sql: DATE_ADD('minute', $1, $0)
+
+  - name: timeonlyadd second
+    sql: DATE_ADD('second', $1, $0)
+
+  - name: create timestamp from milliseconds
+    sql: CAST(from_unixtime($0/1000.0) AS TIMESTAMP WITHOUT TIME ZONE)
+
+  - name: create timestamp from components
+    sql: >
+      CASE WHEN $1 > 12 OR $1 < 1 OR $2 > 31 OR $2 < 1 OR
+        $3 > 24 OR $3 < 1 OR $4 > 60 OR $4 < 0 OR $5 > 60 OR $5 < 0 THEN NULL ELSE
+        CAST(PARSE_DATETIME($0 || '-' || $1 || '-' || $2 || ' ' || $3 || ':' || $4 || ':' || $5,
+              CASE WHEN length($0) > 2 THEN 'YYYY-MM-DD kk:mm:ss' ELSE 'YY-MM-DD kk:mm:ss' END) AS TIMESTAMP WITHOUT TIME ZONE)
+      END
+
+  - name: create timestamp from text
+    sql: CAST(PARSE_DATETIME($0, '$1') AS TIMESTAMP WITHOUT TIME ZONE)
+
+  - name: create time from milliseconds
+    sql: CAST(CAST(from_unixtime($0/1000.0) AS TIMESTAMP WITHOUT TIME ZONE) AS TIME)
+
+  - name: create time from components
+    sql: >
+      CASE WHEN $0 > 24 OR $0 < 0 OR $1 > 60 OR $1 < 0 OR $2 > 60 OR $2 < 0 THEN NULL ELSE
+      CAST(PARSE_DATETIME( $0 || ':' || $1 || ':' || $2, 'kk:mm:ss') AS TIME) END
+
+  - name: create date from milliseconds
+    sql: CAST(from_unixtime($0/1000.0) AS DATE)
+
+  - name: create date from components
+    sql: >
+      CASE WHEN $1 > 12 OR $1 < 1 OR $2 > 31 OR $2 < 1 THEN NULL ELSE
+      CAST(PARSE_DATETIME($0 || '-' || $1 || '-' ||$2,
+              CASE WHEN length($0) > 2 THEN 'YYYY-MM-DD' ELSE 'YY-MM-DD' END) AS DATE) END
+
+  - name: current timestamp
+    sql: cast(CURRENT_TIMESTAMP AS TIMESTAMP WITHOUT TIME ZONE)
+
+  - name: current time
+    sql: CURRENT_time
+
+  - name: current date
+    sql: CURRENT_DATE
+
+  - name: now
+    sql: cast(CURRENT_TIMESTAMP AS TIMESTAMP WITHOUT TIME ZONE)
+
+  # conditional functions group
+
+  - name: case when else
+    sql: CASE WHEN $0 THEN $1 ELSE $2 END
+
+  - name: case when
+    sql: CASE WHEN $0 THEN $1 END
+
+  - name: is null
+    sql: $0 IS NULL
+
+  - name: is not null
+    sql: $0 IS NOT NULL
+
+  - name: nullif
+    sql: nullif($0, $1)
+
+  - name: ifnull
+    sql: if($0 is null, $1)
+
+  - name: coalesce
+    sql: COALESCE($0, $1)
+
+  # logical operators
+  - name: and
+    sql: $0 AND $1
+
+  - name: or
+    sql: $0 OR $1
+
+  - name: between
+    sql: $0 BETWEEN $1 AND $2
+
+  - name: not
+    sql: NOT($0)
+
+  # arithmetic functions group
+  - name: abs
+    sql: ABS($0)
+
+  - name: acos
+    sql: ACOS($0)
+
+  - name: asin
+    sql: ASIN($0)
+
+  - name: atan
+    sql: ATAN($0)
+
+  - name: atan2
+    sql: ATAN2($0, $1)
+
+  - name: sin
+    sql: SIN($0)
+
+  - name: sinh
+    sql: SINH($0)
+
+  - name: cos
+    sql: COS($0)
+
+  - name: cosh
+    sql: COSH($0)
+
+  - name: tan
+    sql: TAN($0)
+
+  - name: tanh
+    sql: TANH($0)
+
+  - name: ln
+    sql: LN(NULLIF(CASE WHEN $0 <= 0 THEN NULL ELSE $0 END ,0))
+
+  - name: log
+    sql: LOG(nullif(CASE WHEN $1 <= 0 THEN NULL ELSE $1 END, 0), CASE WHEN $0 <= 1 THEN NULL ELSE $0 END)
+
+  - name: log10
+    sql: LOG10(CASE WHEN $0 <= 0 THEN NULL ELSE $0 END)
+
+  - name: negation
+    sql: -($0)
+
+  - name: add
+    sql: ($0) + ($1)
+
+  - name: subtract
+    sql: ($0) - ($1)
+
+  - name: multiply
+    sql: $0 * $1
+
+  - name: divide
+    sql: $0 / NULLIF($1,0)
+
+  - name: power
+    sql: POWER($0, $1)
+
+  - name: mod
+    sql: MOD($0, $1)
+
+  - name: round
+    sql: ROUND($0)
+
+  - name: round to
+    sql: ROUND($0, $1)
+
+  - name: ceiling
+    sql: CEILING($0)
+
+  - name: floor
+    sql: FLOOR($0)
+
+  - name: sign
+    sql: SIGN($0)
+
+  - name: truncate
+    sql: TRUNC($0, $1)
+
+  - name: sqrt
+    sql: SQRT($0)
+
+  # conversion functions
+  - name: cast
+    sql: CAST($0 AS $1)
+  
+  - name: random
+    sql: random()
+
+  # spatial functions
+  - name: st_geometryFromText
+    sql: ST_GEOMETRYFROMTEXT($0)
+
+  - name: st_geographyFromText
+    sql: #TO_SPHERICAL_GEOGRAPHY(ST_GEOMETRYFROMTEXT($0))
+
+  - name: st_asbinary
+    sql: ST_ASBINARY($0)
+
+  - name: st_intersects
+    sql: ST_INTERSECTS($0, $1)
+    
+  - name: st_within
+    sql: ST_WITHIN($0, $1)
+
+  - name: st_centroid
+    sql: #not supported in geodesic way
+
+  - name: st_distance_sphere
+    sql: ST_DISTANCE($0, $1)
+
+  - name: linestring_geography
+    sql: TO_SPHERICAL_GEOGRAPHY(ST_LINESTRING(ARRAY[$0, $1]))
+
+  - name: linestring
+    sql: ST_LINESTRING(ARRAY[$0, $1])
+
+  - name: make_point_geography
+    sql: CASE WHEN $0 BETWEEN -180 AND 180 AND $1 BETWEEN -90 AND 90 THEN TO_SPHERICAL_GEOGRAPHY(ST_POINT($0, $1)) END
+
+  - name: make_point
+    sql: ST_POINT($0, $1)
+
+  - name: make_geography_point
+    sql: TO_SPHERICAL_GEOGRAPHY(ST_POINT($0, $1))
+
+  - name: geodesic length
+    sql: # ST_LENGTH(TO_SPHERICAL_GEOGRAPHY($0))
+
+  - name: geodesic area
+    sql: ST_AREA(TO_SPHERICAL_GEOGRAPHY($0))
+
+  - name: st_x
+    sql: ST_X($0)
+
+  - name: st_y
+    sql: ST_Y($0)
+    
+
+spatial properties:
+  default srid: 4326
+
+
+  
+map to field types:
+  geometry: geometry
+
+# mandatory configuration if super class is not defined
+column types:
+  integer: int
+  float: double
+  string: varchar(255)
+  date: date
+  timestamp: timestamp
+  time: time
+
+# If section "date format codes" is not defined, then this section must exist
+date and time sql tokens:
+  YY: yy
+  YYYY: yyyy
+  MM: MM
+  DD: dd
+  hh: hh
+  HH: kk
+  mm: mm
+  ss: ss
+  ms: SS
+  mon: MMM
+  ampm: a
